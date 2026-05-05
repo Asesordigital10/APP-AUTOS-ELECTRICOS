@@ -5,19 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ASYS AUTO - Control Profesional</title>
     
-    <!-- Configuración PWA -->
+    <!-- Configuración PWA e Iconos -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="icon" href="logoasys.png">
+    <link rel="icon" type="image/png" href="logoasys.png">
+    <link rel="apple-touch-icon" href="logoasys.png">
 
+    <!-- Librerías Externas -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, deleteDoc, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, deleteDoc, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
         // CONFIGURACIÓN DE TU FIREBASE
         const firebaseConfig = {
@@ -45,19 +48,19 @@
             combustibles: { "Super 95": 88.03, "Premium 97": 90.09, "Gasoil 10S": 66.27, "Gasoil 50S": 57.72 }
         };
 
-        // Autenticación Anónima
+        // Autenticación Anónima (Privacidad por dispositivo)
         signInAnonymously(auth).catch(console.error);
 
         onAuthStateChanged(auth, (u) => {
             if (u) {
                 user = u;
-                // Escuchar datos de cargas (Privado por Usuario)
+                // Escuchar Cargas (Privado)
                 onSnapshot(query(collection(db, 'users', user.uid, 'cargas'), orderBy('fecha', 'desc')), (snap) => {
                     historialCargas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                     renderizarApp();
                 });
 
-                // Escuchar configuración (Privado por Usuario)
+                // Escuchar Configuración (Privado)
                 onSnapshot(doc(db, 'users', user.uid, 'config', 'general'), (snap) => {
                     if (snap.exists()) {
                         estadoAuto = { ...estadoAuto, ...snap.data() };
@@ -67,7 +70,7 @@
             }
         });
 
-        // Lógica de Costos
+        // Lógica de Costos Eléctricos
         const calcularCostoReal = (kwh, tarifa) => {
             const p = estadoAuto.precios;
             if (tarifa === 'uteRapida') return (kwh * p.uteRapida) + 121.9;
@@ -87,7 +90,7 @@
                 const costo = calcularCostoReal(kwh, tarifa);
                 preview.innerHTML = `<span class="text-blue-400 font-bold">${kwh.toFixed(1)} kWh</span> | <span class="text-green-500 font-bold">$${costo.toFixed(0)}</span>`;
             } else {
-                preview.innerText = "ESPERANDO DATOS...";
+                preview.innerText = "ESPERANDO TELEMETRÍA...";
             }
         };
 
@@ -143,16 +146,16 @@
         function renderizarApp() {
             const kmActual = historialCargas[0]?.km || 0;
             
-            // Lógica Mantenimiento
+            // Mantenimiento (Cada 10.000 km)
             const proximoService = Math.ceil((kmActual + 1) / 10000) * 10000;
             const faltanKm = proximoService - kmActual;
 
-            // Lógica Balanceo LFP
+            // Balanceo LFP (Cada 4 cargas sin llegar al 100%)
             let cargasSinCien = 0;
             for (let c of historialCargas) { if (c.esCien) break; cargasSinCien++; }
             const necesitaBal = cargasSinCien >= 4;
 
-            // Lógica Ahorro
+            // Cálculo de Ahorro Real
             let ahorroTotal = 0;
             if (historialCargas.length > 1) {
                 const ordenadas = [...historialCargas].sort((a,b) => a.km - b.km);
@@ -167,36 +170,36 @@
                 }
             }
 
-            // Actualizar UI
+            // Actualizar Interfaz
             document.getElementById('ahorro-valor').innerText = `$ ${ahorroTotal.toLocaleString('es-UY', {maximumFractionDigits:0})}`;
             document.getElementById('txt-combustible').innerText = `vs ${estadoAuto.combustibleComparativo}`;
             
             document.getElementById('card-mantenimiento').innerHTML = `
-                <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-[2rem] flex justify-between items-center">
+                <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-[2rem] flex justify-between items-center shadow-xl">
                     <div>
-                        <p class="text-[10px] text-zinc-500 uppercase font-bold">Próximo Service</p>
+                        <p class="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Service Oficial</p>
                         <p class="text-xl font-black ${faltanKm < 500 ? 'text-orange-500' : 'text-white'}">${faltanKm.toLocaleString()} KM</p>
                     </div>
                     <div class="text-right">
-                        <p class="text-[10px] text-zinc-500 uppercase font-bold">Balanceo LFP</p>
-                        <p class="text-sm font-bold ${necesitaBal ? 'text-purple-500 animate-pulse' : 'text-zinc-400'}">${necesitaBal ? '¡CARGAR AL 100%!' : 'OK'}</p>
+                        <p class="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Salud Batería</p>
+                        <p class="text-sm font-bold ${necesitaBal ? 'text-purple-500 animate-pulse' : 'text-zinc-400'}">${necesitaBal ? '¡CARGAR AL 100%!' : 'BALANCEADA'}</p>
                     </div>
                 </div>
             `;
 
             const lista = document.getElementById('lista-cargas');
             lista.innerHTML = historialCargas.slice(0, 5).map(c => `
-                <div class="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800 mb-2 flex justify-between items-center">
+                <div class="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800 mb-2 flex justify-between items-center backdrop-blur-sm">
                     <div>
-                        <p class="font-bold text-sm">${c.km.toLocaleString()} km ${c.esCien ? '⭐' : ''}</p>
-                        <p class="text-[10px] text-zinc-600 uppercase">${new Date(c.fecha).toLocaleDateString()}</p>
+                        <p class="font-bold text-sm text-zinc-200">${c.km.toLocaleString()} km ${c.esCien ? '<span class="text-purple-400 text-[10px] ml-1">FULL</span>' : ''}</p>
+                        <p class="text-[10px] text-zinc-600 uppercase font-mono">${new Date(c.fecha).toLocaleDateString()}</p>
                     </div>
                     <div class="flex items-center gap-4">
                         <div class="text-right">
                             <p class="text-green-500 font-bold text-sm">$${c.costo.toFixed(0)}</p>
                             <p class="text-[10px] text-zinc-600">${c.kwhTotales.toFixed(1)} kWh</p>
                         </div>
-                        <button onclick="eliminarRegistro('${c.id}')" class="text-zinc-800 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        <button onclick="eliminarRegistro('${c.id}')" class="text-zinc-800 hover:text-red-500 active:scale-75 transition-transform"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                     </div>
                 </div>
             `).join('');
@@ -208,39 +211,48 @@
     </script>
 
     <style>
-        body { background-color: #000; color: #fff; font-family: system-ui, -apple-system, sans-serif; }
+        body { background-color: #000; color: #fff; font-family: system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
         input, select { border-radius: 1rem; outline: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
 <body class="p-6 max-w-md mx-auto pb-24">
 
+    <!-- HEADER CON LOGO -->
     <header class="flex justify-between items-center mb-8">
-        <div>
-            <h1 class="text-2xl font-black italic tracking-tighter text-blue-500 leading-none">ASYS AUTO</h1>
-            <p class="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Telemetría Personal</p>
+        <div class="flex items-center gap-3">
+            <div class="relative">
+                <img src="logoasys.png" alt="Logo" class="w-12 h-12 object-contain relative z-10">
+                <div class="absolute inset-0 bg-blue-500/20 blur-xl rounded-full"></div>
+            </div>
+            <div>
+                <h1 class="text-2xl font-black italic tracking-tighter text-blue-500 leading-none">ASYS AUTO</h1>
+                <p class="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Telemetría Personal</p>
+            </div>
         </div>
-        <button onclick="toggleConfig()" class="p-3 bg-zinc-900 border border-zinc-800 rounded-2xl active:scale-90 transition-transform">
+        <button onclick="toggleConfig()" class="p-3 bg-zinc-900 border border-zinc-800 rounded-2xl active:scale-90 transition-transform shadow-lg">
             <i data-lucide="settings" class="w-5 h-5 text-zinc-400"></i>
         </button>
     </header>
 
-    <!-- CARD AHORRO -->
+    <!-- CARD AHORRO HERO -->
     <div class="bg-zinc-900 border border-zinc-800 p-8 rounded-[2.5rem] text-center mb-4 shadow-2xl relative overflow-hidden">
         <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-green-500 to-transparent opacity-30"></div>
-        <p class="text-[10px] uppercase tracking-[0.3em] text-zinc-500 mb-1 font-bold">Ahorro Estimado</p>
+        <p class="text-[10px] uppercase tracking-[0.3em] text-zinc-500 mb-1 font-bold">Ahorro Acumulado</p>
         <p id="ahorro-valor" class="text-6xl font-black text-green-500 italic tracking-tighter mb-1">$ 0</p>
         <p id="txt-combustible" class="text-[10px] font-bold text-zinc-600 uppercase italic">vs Super 95</p>
     </div>
 
+    <!-- CARD MANTENIMIENTO -->
     <div id="card-mantenimiento" class="mb-8"></div>
 
-    <!-- FORMULARIO -->
-    <section class="bg-zinc-900/40 p-6 rounded-[2.5rem] border border-zinc-800/50 mb-8">
+    <!-- FORMULARIO DE CARGA -->
+    <section class="bg-zinc-900/40 p-6 rounded-[2.5rem] border border-zinc-800/50 mb-8 backdrop-blur-md">
         <form onsubmit="registrarCargaForm(event)" class="space-y-4">
             <div>
-                <label class="text-[10px] font-black text-zinc-500 uppercase ml-2 mb-1 block">Kilometraje del Tablero</label>
-                <input type="number" id="km" required class="w-full bg-black border border-zinc-800 p-4 text-center text-2xl font-black text-white" placeholder="00000">
+                <label class="text-[10px] font-black text-zinc-500 uppercase ml-2 mb-1 block">Kilometraje Actual</label>
+                <input type="number" id="km" required class="w-full bg-black border border-zinc-800 p-4 text-center text-2xl font-black text-white focus:border-blue-500 transition-colors" placeholder="00000">
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -256,7 +268,7 @@
 
             <div>
                 <label class="text-[10px] font-black text-zinc-500 uppercase ml-2 mb-1 block">Tarifa de Carga</label>
-                <select id="tipo-tarifa" onchange="actualizarPreview()" required class="w-full bg-black border border-zinc-800 p-4 font-bold text-zinc-400 appearance-none text-center">
+                <select id="tipo-tarifa" onchange="actualizarPreview()" required class="w-full bg-black border border-zinc-800 p-4 font-bold text-zinc-400 appearance-none text-center cursor-pointer">
                     <option value="">SELECCIONAR TARIFA</option>
                     <option value="hogarValle">Hogar (Tarifa Valle)</option>
                     <option value="uteLenta">Punto UTE (Lento)</option>
@@ -265,9 +277,9 @@
                 </select>
             </div>
 
-            <div id="preview-costo" class="text-center py-2 text-xs font-mono text-zinc-700 tracking-widest">ESPERANDO TELEMETRÍA</div>
+            <div id="preview-costo" class="text-center py-2 text-[10px] font-mono text-zinc-700 tracking-widest uppercase">ESPERANDO TELEMETRÍA</div>
 
-            <label class="flex justify-between items-center bg-black/30 p-4 rounded-2xl border border-zinc-800 cursor-pointer">
+            <label class="flex justify-between items-center bg-black/30 p-4 rounded-2xl border border-zinc-800 cursor-pointer active:bg-zinc-800 transition-colors">
                 <span class="text-xs font-bold uppercase text-zinc-400 italic">¿Carga completa (100%)?</span>
                 <input type="checkbox" id="es-cien" class="w-6 h-6 rounded-lg accent-blue-600">
             </label>
@@ -276,37 +288,38 @@
         </form>
     </section>
 
+    <!-- HISTORIAL -->
     <h3 class="text-[10px] font-black uppercase text-zinc-800 mb-4 tracking-[0.2em] flex items-center gap-2">
-        <span class="h-px bg-zinc-900 flex-grow"></span> Historial Reciente
+        <span class="h-px bg-zinc-900 flex-grow"></span> Bitácora de Viaje
     </h3>
     <div id="lista-cargas" class="space-y-2"></div>
 
     <!-- MODAL CONFIGURACIÓN -->
     <div id="modal-config" class="fixed inset-0 bg-black/95 backdrop-blur-xl z-50 p-8 hidden flex flex-col no-scrollbar overflow-y-auto">
         <div class="flex justify-between items-center mb-10">
-            <h2 class="text-xl font-black uppercase italic text-blue-500">Ajustes del Vehículo</h2>
-            <button onclick="toggleConfig()" class="text-zinc-500"><i data-lucide="x"></i></button>
+            <h2 class="text-xl font-black uppercase italic text-blue-500 tracking-tighter">Ajustes del Vehículo</h2>
+            <button onclick="toggleConfig()" class="text-zinc-500 p-2"><i data-lucide="x"></i></button>
         </div>
         
         <div class="space-y-8 pb-10">
             <div class="space-y-4">
                 <div>
-                    <label class="text-[10px] text-zinc-500 block mb-2 font-bold uppercase">Nombre del Conductor</label>
+                    <label class="text-[10px] text-zinc-500 block mb-2 font-bold uppercase tracking-widest">Nombre del Conductor</label>
                     <input id="conf-nombre" type="text" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="text-[10px] text-zinc-500 block mb-2 font-bold uppercase">Batería (kWh)</label>
+                        <label class="text-[10px] text-zinc-500 block mb-2 font-bold uppercase tracking-widest">Batería (kWh)</label>
                         <input id="conf-bat" type="number" step="0.1" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold">
                     </div>
                     <div>
-                        <label class="text-[10px] text-zinc-500 block mb-2 font-bold uppercase">Rendimiento (km/L)</label>
+                        <label class="text-[10px] text-zinc-500 block mb-2 font-bold uppercase tracking-widest">Rendimiento (km/L)</label>
                         <input id="conf-rend" type="number" step="0.1" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold">
                     </div>
                 </div>
                 <div>
-                    <label class="text-[10px] text-zinc-500 block mb-2 font-bold uppercase">Comparar contra combustible</label>
-                    <select id="conf-tipo-nafta" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold">
+                    <label class="text-[10px] text-zinc-500 block mb-2 font-bold uppercase tracking-widest">Comparar contra</label>
+                    <select id="conf-tipo-nafta" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold appearance-none">
                         <option value="Super 95">Super 95</option>
                         <option value="Premium 97">Premium 97</option>
                         <option value="Gasoil 10S">Gasoil 10S</option>
@@ -315,8 +328,8 @@
                 </div>
             </div>
 
-            <button onclick="guardarConfig()" class="w-full bg-blue-600 p-5 rounded-2xl font-black uppercase tracking-widest shadow-lg">Guardar Configuración</button>
-            <p class="text-[9px] text-zinc-700 text-center uppercase font-bold">Los datos se sincronizan automáticamente con tu cuenta privada.</p>
+            <button onclick="guardarConfig()" class="w-full bg-blue-600 p-5 rounded-2xl font-black uppercase tracking-widest shadow-lg active:scale-95 transition-transform">Guardar Configuración</button>
+            <p class="text-[9px] text-zinc-700 text-center uppercase font-bold tracking-tighter">Los datos se sincronizan automáticamente en tu nube privada.</p>
         </div>
     </div>
 
