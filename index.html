@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ASYS AUTO - PRO</title>
     
+    <!-- Configuración PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="icon" type="image/png" href="logoasys.png">
     <link rel="apple-touch-icon" href="logoasys.png">
@@ -15,10 +17,21 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <script type="module">
+        // 1. REGISTRO DEL SERVICE WORKER (Para que sea instalable)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('SW registrado con éxito'))
+                    .catch(err => console.log('Error al registrar SW', err));
+            });
+        }
+
+        // 2. IMPORTACIONES DE FIREBASE
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, deleteDoc, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
+        // 3. TU CONFIGURACIÓN DE FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyA11UK2o8-EgE9vTTcw-eeA55yC-n9eZIg",
             authDomain: "app-autos-electricos-5a311.firebaseapp.com",
@@ -44,17 +57,19 @@
             combustibles: { "Super 95": 88.03, "Premium 97": 90.09, "Gasoil 10S": 66.27, "Gasoil 50S": 57.72 }
         };
 
-        // --- LÓGICA DE LOGIN ---
+        // --- FUNCIONES DE AUTENTICACIÓN ---
         window.loginGoogle = async () => {
             try {
                 await signInWithPopup(auth, provider);
             } catch (error) {
-                console.error("Error al iniciar sesión", error);
-                alert("No se pudo iniciar sesión");
+                console.error("Error Login:", error);
+                alert("Error al conectar con Google. Verifica los dominios autorizados en Firebase.");
             }
         };
 
-        window.logout = () => signOut(auth);
+        window.logout = () => {
+            if(confirm("¿Cerrar sesión?")) signOut(auth);
+        };
 
         onAuthStateChanged(auth, (u) => {
             const loginScreen = document.getElementById('login-screen');
@@ -65,13 +80,13 @@
                 loginScreen.classList.add('hidden');
                 mainApp.classList.remove('hidden');
 
-                // Escuchar Cargas Privadas
+                // Cargas Privadas
                 onSnapshot(query(collection(db, 'users', user.uid, 'cargas'), orderBy('fecha', 'desc')), (snap) => {
                     historialCargas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                     renderizarApp();
                 });
 
-                // Escuchar Configuración Privada
+                // Configuración Privada
                 onSnapshot(doc(db, 'users', user.uid, 'config', 'general'), (snap) => {
                     if (snap.exists()) {
                         estadoAuto = { ...estadoAuto, ...snap.data() };
@@ -85,7 +100,7 @@
             }
         });
 
-        // --- LÓGICA DE NEGOCIO ---
+        // --- LÓGICA DE CÁLCULOS ---
         const calcularCostoReal = (kwh, tarifa) => {
             const p = estadoAuto.precios;
             if (tarifa === 'uteRapida') return (kwh * p.uteRapida) + 121.9;
@@ -167,7 +182,7 @@
 
             document.getElementById('ahorro-valor').innerText = `$ ${ahorroTotal.toLocaleString('es-UY', {maximumFractionDigits:0})}`;
             document.getElementById('txt-combustible').innerText = `vs ${estadoAuto.combustibleComparativo}`;
-            document.getElementById('user-display-name').innerText = estadoAuto.nombreUsuario || user.displayName;
+            document.getElementById('user-display-name').innerText = estadoAuto.nombreUsuario || user.displayName || "Usuario";
             
             document.getElementById('card-mantenimiento').innerHTML = `
                 <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-[2rem] flex justify-between items-center shadow-xl">
@@ -229,7 +244,7 @@
         <p class="mt-8 text-[10px] text-zinc-700 uppercase font-bold tracking-widest">Tus datos se guardan en tu cuenta personal</p>
     </div>
 
-    <!-- APP PRINCIPAL (Oculta por defecto) -->
+    <!-- APP PRINCIPAL -->
     <div id="main-app" class="hidden p-6 pb-24">
         <header class="flex justify-between items-center mb-8">
             <div class="flex items-center gap-3">
