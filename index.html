@@ -46,8 +46,8 @@
             nombreUsuario: "",
             marcaModelo: "",
             matricula: "",
-            capacidadBateria: 54.3,
-            rendimientoAnterior: 12,
+            capacidadBateria: 54.3, // Valor interno fijo
+            rendimientoAnterior: 12, // Valor interno fijo
             nombreTaller: "",
             direccionTaller: "",
             telefonoTaller: "",
@@ -72,12 +72,7 @@
                 onSnapshot(doc(db, 'users', user.uid, 'config', 'general'), (snap) => {
                     if (snap.exists()) { 
                         const data = snap.data();
-                        estadoAuto = { 
-                            ...estadoAuto, 
-                            ...data,
-                            precios: { ...estadoAuto.precios, ...(data.precios || {}) },
-                            combustibles: { ...estadoAuto.combustibles, ...(data.combustibles || {}) }
-                        };
+                        estadoAuto = { ...estadoAuto, ...data };
                         renderizarApp(); 
                     }
                 });
@@ -131,27 +126,27 @@
                 document.getElementById('conf-nombre').value = estadoAuto.nombreUsuario || "";
                 document.getElementById('conf-modelo').value = estadoAuto.marcaModelo || "";
                 document.getElementById('conf-matricula').value = estadoAuto.matricula || "";
-                // Precios Energía
                 document.getElementById('p-hogar').value = estadoAuto.precios.hogarValle;
                 document.getElementById('p-ute-l').value = estadoAuto.precios.uteLenta;
                 document.getElementById('p-ute-r').value = estadoAuto.precios.uteRapida;
                 document.getElementById('p-wallbox').value = estadoAuto.precios.wallboxEspecial;
-                // Precios Combustible
                 document.getElementById('p-super').value = estadoAuto.combustibles["Super 95"];
                 document.getElementById('p-premium').value = estadoAuto.combustibles["Premium 97"];
                 document.getElementById('p-gasoil10').value = estadoAuto.combustibles["Gasoil 10S"];
                 document.getElementById('p-gasoil50').value = estadoAuto.combustibles["Gasoil 50-S"];
-                // Taller
                 document.getElementById('conf-taller').value = estadoAuto.nombreTaller || "";
                 document.getElementById('conf-taller-dir').value = estadoAuto.direccionTaller || "";
                 document.getElementById('conf-taller-tel').value = estadoAuto.telefonoTaller || "";
-                // Técnicos
-                document.getElementById('conf-bat-tecnica').value = estadoAuto.capacidadBateria;
-                document.getElementById('conf-rend-tecnico').value = estadoAuto.rendimientoAnterior;
+                document.getElementById('conf-tipo-nafta').value = estadoAuto.combustibleComparativo || "Super 95";
             }
         };
 
         window.guardarConfig = async () => {
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.innerText = "GUARDANDO...";
+            btn.disabled = true;
+
             const data = {
                 nombreUsuario: document.getElementById('conf-nombre').value,
                 marcaModelo: document.getElementById('conf-modelo').value,
@@ -171,11 +166,16 @@
                 nombreTaller: document.getElementById('conf-taller').value,
                 direccionTaller: document.getElementById('conf-taller-dir').value,
                 telefonoTaller: document.getElementById('conf-taller-tel').value,
-                capacidadBateria: parseFloat(document.getElementById('conf-bat-tecnica').value),
-                rendimientoAnterior: parseFloat(document.getElementById('conf-rend-tecnico').value)
+                combustibleComparativo: document.getElementById('conf-tipo-nafta').value
             };
             await setDoc(doc(db, 'users', user.uid, 'config', 'general'), data, { merge: true });
-            toggleConfig();
+            
+            btn.innerText = "¡GUARDADO! ✅";
+            setTimeout(() => {
+                toggleConfig();
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }, 1000);
         };
 
         window.solicitarService = () => {
@@ -203,7 +203,6 @@
             const kmActual = historialCargas[0]?.km || 0;
             const proximoService = Math.ceil((kmActual + 1) / 10000) * 10000;
             const faltanKm = proximoService - kmActual;
-            
             let cargasSinCien = 0;
             for (let c of historialCargas) { if (c.esCien) break; cargasSinCien++; }
             const necesitaBal = cargasSinCien >= 4;
@@ -361,7 +360,7 @@
         <div id="lista-cargas" class="space-y-2"></div>
     </div>
 
-    <!-- MODAL CONFIGURACIÓN COMPLETO -->
+    <!-- MODAL CONFIGURACIÓN SIMPLIFICADO -->
     <div id="modal-config" class="fixed inset-0 bg-black/95 backdrop-blur-xl z-50 p-8 hidden flex flex-col no-scrollbar overflow-y-auto">
         <div class="flex justify-between items-center mb-10">
             <h2 class="text-xl font-black uppercase italic text-blue-500">Ajustes</h2>
@@ -399,21 +398,23 @@
                 </div>
             </div>
 
+            <!-- Combustible Anterior -->
+            <div>
+                <label class="text-[10px] text-zinc-500 block mb-2 font-bold uppercase tracking-widest">Combustible utilizado antes</label>
+                <select id="conf-tipo-nafta" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold">
+                    <option value="Super 95">Super 95</option>
+                    <option value="Premium 97">Premium 97</option>
+                    <option value="Gasoil 10S">Gasoil 10S</option>
+                    <option value="Gasoil 50-S">Gasoil 50-S</option>
+                </select>
+            </div>
+
             <!-- Taller -->
             <div class="space-y-4">
                 <p class="text-[9px] font-black text-zinc-600 uppercase tracking-widest border-b border-zinc-900 pb-2 italic">Taller y Service</p>
                 <input id="conf-taller" type="text" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold" placeholder="Nombre del Taller">
                 <input id="conf-taller-dir" type="text" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold" placeholder="Dirección">
                 <input id="conf-taller-tel" type="text" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold" placeholder="WhatsApp (Ej: 59899123456)">
-            </div>
-
-            <!-- Datos Técnicos -->
-            <div class="space-y-4">
-                <p class="text-[9px] font-black text-zinc-600 uppercase tracking-widest border-b border-zinc-900 pb-2 italic">Datos Técnicos</p>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="space-y-1"><label class="text-[8px] text-zinc-500 uppercase ml-2 italic">Batería (kWh)</label><input id="conf-bat-tecnica" type="number" step="0.1" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold"></div>
-                    <div class="space-y-1"><label class="text-[8px] text-zinc-500 uppercase ml-2 italic">Rendimiento (km/L)</label><input id="conf-rend-tecnico" type="number" step="0.1" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold"></div>
-                </div>
             </div>
 
             <button onclick="guardarConfig()" class="w-full bg-blue-600 p-5 rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-transform shadow-xl">Guardar Configuración</button>
