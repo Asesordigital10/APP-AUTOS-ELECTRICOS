@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ASYS AUTO - PRO</title>
     
-    <!-- Configuración PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
-    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="icon" type="image/png" href="logoasys.png">
     <link rel="apple-touch-icon" href="logoasys.png">
@@ -17,21 +15,16 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <script type="module">
-        // 1. REGISTRO DEL SERVICE WORKER (Para que sea instalable)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('SW registrado con éxito'))
-                    .catch(err => console.log('Error al registrar SW', err));
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log(err));
             });
         }
 
-        // 2. IMPORTACIONES DE FIREBASE
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, deleteDoc, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-        // 3. TU CONFIGURACIÓN DE FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyA11UK2o8-EgE9vTTcw-eeA55yC-n9eZIg",
             authDomain: "app-autos-electricos-5a311.firebaseapp.com",
@@ -57,41 +50,22 @@
             combustibles: { "Super 95": 88.03, "Premium 97": 90.09, "Gasoil 10S": 66.27, "Gasoil 50S": 57.72 }
         };
 
-        // --- FUNCIONES DE AUTENTICACIÓN ---
-        window.loginGoogle = async () => {
-            try {
-                await signInWithPopup(auth, provider);
-            } catch (error) {
-                console.error("Error Login:", error);
-                alert("Error al conectar con Google. Verifica los dominios autorizados en Firebase.");
-            }
-        };
-
-        window.logout = () => {
-            if(confirm("¿Cerrar sesión?")) signOut(auth);
-        };
+        window.loginGoogle = async () => { try { await signInWithPopup(auth, provider); } catch (e) { alert("Error al conectar"); } };
+        window.logout = () => { if(confirm("¿Cerrar sesión?")) signOut(auth); };
 
         onAuthStateChanged(auth, (u) => {
             const loginScreen = document.getElementById('login-screen');
             const mainApp = document.getElementById('main-app');
-
             if (u) {
                 user = u;
                 loginScreen.classList.add('hidden');
                 mainApp.classList.remove('hidden');
-
-                // Cargas Privadas
                 onSnapshot(query(collection(db, 'users', user.uid, 'cargas'), orderBy('fecha', 'desc')), (snap) => {
                     historialCargas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                     renderizarApp();
                 });
-
-                // Configuración Privada
                 onSnapshot(doc(db, 'users', user.uid, 'config', 'general'), (snap) => {
-                    if (snap.exists()) {
-                        estadoAuto = { ...estadoAuto, ...snap.data() };
-                        renderizarApp();
-                    }
+                    if (snap.exists()) { estadoAuto = { ...estadoAuto, ...snap.data() }; renderizarApp(); }
                 });
             } else {
                 user = null;
@@ -100,7 +74,6 @@
             }
         });
 
-        // --- LÓGICA DE CÁLCULOS ---
         const calcularCostoReal = (kwh, tarifa) => {
             const p = estadoAuto.precios;
             if (tarifa === 'uteRapida') return (kwh * p.uteRapida) + 121.9;
@@ -114,7 +87,6 @@
             const batFin = parseFloat(document.getElementById('bat-fin').value);
             const tarifa = document.getElementById('tipo-tarifa').value;
             const preview = document.getElementById('preview-costo');
-
             if (!isNaN(batIn) && !isNaN(batFin) && tarifa) {
                 const kwh = ((batFin - batIn) / 100) * estadoAuto.capacidadBateria;
                 const costo = calcularCostoReal(kwh, tarifa);
@@ -129,21 +101,14 @@
             const batFin = parseFloat(document.getElementById('bat-fin').value);
             const tarifa = document.getElementById('tipo-tarifa').value;
             const esCien = document.getElementById('es-cien').checked;
-
             const kwhTotales = ((batFin - batIn) / 100) * estadoAuto.capacidadBateria;
             const costo = calcularCostoReal(kwhTotales, tarifa);
-
-            await addDoc(collection(db, 'users', user.uid, 'cargas'), {
-                fecha: Date.now(), km, batIn, batFin, kwhTotales, costo, tarifaLabel: tarifa, esCien
-            });
+            await addDoc(collection(db, 'users', user.uid, 'cargas'), { fecha: Date.now(), km, batIn, batFin, kwhTotales, costo, tarifaLabel: tarifa, esCien });
             e.target.reset();
             actualizarPreview();
         };
 
-        window.eliminarRegistro = async (id) => {
-            if(confirm("¿Eliminar registro?")) await deleteDoc(doc(db, 'users', user.uid, 'cargas', id));
-        };
-
+        window.eliminarRegistro = async (id) => { if(confirm("¿Eliminar?")) await deleteDoc(doc(db, 'users', user.uid, 'cargas', id)); };
         window.toggleConfig = () => document.getElementById('modal-config').classList.toggle('hidden');
 
         window.guardarConfig = async () => {
@@ -161,11 +126,9 @@
             const kmActual = historialCargas[0]?.km || 0;
             const proximoService = Math.ceil((kmActual + 1) / 10000) * 10000;
             const faltanKm = proximoService - kmActual;
-
             let cargasSinCien = 0;
             for (let c of historialCargas) { if (c.esCien) break; cargasSinCien++; }
             const necesitaBal = cargasSinCien >= 4;
-
             let ahorroTotal = 0;
             if (historialCargas.length > 1) {
                 const ordenadas = [...historialCargas].sort((a,b) => a.km - b.km);
@@ -179,43 +142,25 @@
                     }
                 }
             }
-
             document.getElementById('ahorro-valor').innerText = `$ ${ahorroTotal.toLocaleString('es-UY', {maximumFractionDigits:0})}`;
             document.getElementById('txt-combustible').innerText = `vs ${estadoAuto.combustibleComparativo}`;
             document.getElementById('user-display-name').innerText = estadoAuto.nombreUsuario || user.displayName || "Usuario";
             
             document.getElementById('card-mantenimiento').innerHTML = `
                 <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-[2rem] flex justify-between items-center shadow-xl">
-                    <div>
-                        <p class="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Service Oficial</p>
-                        <p class="text-xl font-black ${faltanKm < 500 ? 'text-orange-500' : 'text-white'}">${faltanKm.toLocaleString()} KM</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Salud Batería</p>
-                        <p class="text-sm font-bold ${necesitaBal ? 'text-purple-500 animate-pulse' : 'text-zinc-400'}">${necesitaBal ? '¡CARGAR AL 100%!' : 'BALANCEADA'}</p>
-                    </div>
+                    <div><p class="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Service Oficial</p><p class="text-xl font-black ${faltanKm < 500 ? 'text-orange-500' : 'text-white'}">${faltanKm.toLocaleString()} KM</p></div>
+                    <div class="text-right"><p class="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Salud Batería</p><p class="text-sm font-bold ${necesitaBal ? 'text-purple-500 animate-pulse' : 'text-zinc-400'}">${necesitaBal ? '¡CARGAR AL 100%!' : 'BALANCEADA'}</p></div>
                 </div>
             `;
-
             const lista = document.getElementById('lista-cargas');
             lista.innerHTML = historialCargas.slice(0, 5).map(c => `
                 <div class="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800 mb-2 flex justify-between items-center backdrop-blur-sm">
-                    <div>
-                        <p class="font-bold text-sm text-zinc-200">${c.km.toLocaleString()} km ${c.esCien ? '⭐' : ''}</p>
-                        <p class="text-[10px] text-zinc-600 uppercase font-mono">${new Date(c.fecha).toLocaleDateString()}</p>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <div class="text-right">
-                            <p class="text-green-500 font-bold text-sm">$${c.costo.toFixed(0)}</p>
-                            <p class="text-[10px] text-zinc-600">${c.kwhTotales.toFixed(1)} kWh</p>
-                        </div>
-                        <button onclick="eliminarRegistro('${c.id}')" class="text-zinc-800 hover:text-red-500 active:scale-75 transition-transform"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                    </div>
+                    <div><p class="font-bold text-sm text-zinc-200">${c.km.toLocaleString()} km ${c.esCien ? '⭐' : ''}</p><p class="text-[10px] text-zinc-600 uppercase font-mono">${new Date(c.fecha).toLocaleDateString()}</p></div>
+                    <div class="flex items-center gap-4"><div class="text-right"><p class="text-green-500 font-bold text-sm">$${c.costo.toFixed(0)}</p><p class="text-[10px] text-zinc-600">${c.kwhTotales.toFixed(1)} kWh</p></div><button onclick="eliminarRegistro('${c.id}')" class="text-zinc-800 hover:text-red-500 active:scale-75 transition-transform"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>
                 </div>
             `).join('');
             lucide.createIcons();
         }
-
         window.onload = () => { lucide.createIcons(); };
         window.registrarCargaForm = registrarCarga;
     </script>
@@ -236,43 +181,36 @@
         </div>
         <h1 class="text-4xl font-black italic tracking-tighter text-white mb-2">ASYS AUTO</h1>
         <p class="text-zinc-500 text-sm mb-12 uppercase tracking-widest font-bold">Gestión PRO de Energía</p>
-        
         <button onclick="loginGoogle()" class="flex items-center gap-4 bg-white text-black px-8 py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition-transform">
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6 h-6">
-            Entrar con Google
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6 h-6"> Entrar con Google
         </button>
-        <p class="mt-8 text-[10px] text-zinc-700 uppercase font-bold tracking-widest">Tus datos se guardan en tu cuenta personal</p>
     </div>
 
     <!-- APP PRINCIPAL -->
     <div id="main-app" class="hidden p-6 pb-24">
+        
+        <!-- 1) LOGO ARRIBA -->
+        <div class="flex justify-center mb-6">
+            <img src="logoasys.png" alt="Logo" class="w-24 h-24 object-contain">
+        </div>
+
+        <!-- 2) USUARIO Y RUEDA -->
         <header class="flex justify-between items-center mb-8">
-            <div class="flex items-center gap-3">
-                <img src="logoasys.png" alt="Logo" class="w-10 h-10 object-contain">
-                <div>
-                    <h1 id="user-display-name" class="text-lg font-black italic tracking-tighter text-blue-500 leading-none">...</h1>
-                    <p class="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Telemetría Activa</p>
-                </div>
+            <div>
+                <h1 id="user-display-name" class="text-xl font-black italic tracking-tighter text-blue-500 leading-none">...</h1>
+                <p class="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Telemetría Activa</p>
             </div>
-            <button onclick="toggleConfig()" class="p-3 bg-zinc-900 border border-zinc-800 rounded-2xl active:scale-90 transition-transform">
+            <button onclick="toggleConfig()" class="p-3 bg-zinc-900 border border-zinc-800 rounded-2xl active:scale-90 transition-transform shadow-lg">
                 <i data-lucide="settings" class="w-5 h-5 text-zinc-400"></i>
             </button>
         </header>
 
-        <!-- CARD AHORRO -->
-        <div class="bg-zinc-900 border border-zinc-800 p-8 rounded-[2.5rem] text-center mb-4 shadow-2xl relative overflow-hidden">
-            <p class="text-[10px] uppercase tracking-[0.3em] text-zinc-500 mb-1 font-bold">Ahorro Acumulado</p>
-            <p id="ahorro-valor" class="text-6xl font-black text-green-500 italic tracking-tighter mb-1">$ 0</p>
-            <p id="txt-combustible" class="text-[10px] font-bold text-zinc-600 uppercase italic">vs Super 95</p>
-        </div>
-
-        <div id="card-mantenimiento" class="mb-8"></div>
-
         <!-- FORMULARIO -->
-        <section class="bg-zinc-900/40 p-6 rounded-[2.5rem] border border-zinc-800/50 mb-8 backdrop-blur-md">
+        <section class="bg-zinc-900/40 p-6 rounded-[2.5rem] border border-zinc-800/50 mb-6 backdrop-blur-md">
             <form onsubmit="registrarCargaForm(event)" class="space-y-4">
                 <div>
-                    <label class="text-[10px] font-black text-zinc-500 uppercase ml-2 mb-1 block">Kilometraje Actual</label>
+                    <!-- 3) CAMBIO DE NOMBRE ETIQUETA -->
+                    <label class="text-[10px] font-black text-zinc-500 uppercase ml-2 mb-1 block">Kilómetros a la carga</label>
                     <input type="number" id="km" required class="w-full bg-black border border-zinc-800 p-4 text-center text-2xl font-black text-white focus:border-blue-500 transition-colors" placeholder="00000">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
@@ -290,7 +228,8 @@
                     <option value="hogarValle">Hogar (Tarifa Valle)</option>
                     <option value="uteLenta">Punto UTE (Lento)</option>
                     <option value="uteRapida">Punto UTE (Rápido)</option>
-                    <option value="wallboxEspecial">Gratis / Empresa</option>
+                    <!-- 4) CAMBIO A OTROS -->
+                    <option value="wallboxEspecial">Otros</option>
                 </select>
                 <div id="preview-costo" class="text-center py-2 text-[10px] font-mono text-zinc-700 tracking-widest uppercase">ESPERANDO DATOS</div>
                 <label class="flex justify-between items-center bg-black/30 p-4 rounded-2xl border border-zinc-800 cursor-pointer">
@@ -300,6 +239,15 @@
                 <button type="submit" class="w-full bg-blue-600 p-5 rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-transform shadow-xl">Registrar Carga</button>
             </form>
         </section>
+
+        <!-- 5) AHORRO ACUMULADO DEBAJO DEL BOTÓN -->
+        <div class="bg-zinc-900 border border-zinc-800 p-8 rounded-[2.5rem] text-center mb-6 shadow-2xl relative overflow-hidden">
+            <p class="text-[10px] uppercase tracking-[0.3em] text-zinc-500 mb-1 font-bold">Ahorro Acumulado</p>
+            <p id="ahorro-valor" class="text-6xl font-black text-green-500 italic tracking-tighter mb-1">$ 0</p>
+            <p id="txt-combustible" class="text-[10px] font-bold text-zinc-600 uppercase italic">vs Super 95</p>
+        </div>
+
+        <div id="card-mantenimiento" class="mb-8"></div>
 
         <h3 class="text-[10px] font-black uppercase text-zinc-800 mb-4 tracking-[0.2em] flex items-center gap-2">
             <span class="h-px bg-zinc-900 flex-grow"></span> Historial
@@ -314,19 +262,10 @@
             <button onclick="toggleConfig()" class="text-zinc-500 p-2"><i data-lucide="x"></i></button>
         </div>
         <div class="space-y-6 pb-10">
-            <div>
-                <label class="text-[10px] text-zinc-500 block mb-2 font-bold uppercase">Nombre en App</label>
-                <input id="conf-nombre" type="text" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold">
-            </div>
+            <div><label class="text-[10px] text-zinc-500 block mb-2 font-bold uppercase">Nombre en App</label><input id="conf-nombre" type="text" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold"></div>
             <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="text-[10px] text-zinc-500 block mb-2 font-bold uppercase">Batería (kWh)</label>
-                    <input id="conf-bat" type="number" step="0.1" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold">
-                </div>
-                <div>
-                    <label class="text-[10px] text-zinc-500 block mb-2 font-bold uppercase">Rendimiento (km/L)</label>
-                    <input id="conf-rend" type="number" step="0.1" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold">
-                </div>
+                <div><label class="text-[10px] text-zinc-500 block mb-2 font-bold uppercase">Batería (kWh)</label><input id="conf-bat" type="number" step="0.1" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold"></div>
+                <div><label class="text-[10px] text-zinc-500 block mb-2 font-bold uppercase">Rendimiento (km/L)</label><input id="conf-rend" type="number" step="0.1" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold"></div>
             </div>
             <div>
                 <label class="text-[10px] text-zinc-500 block mb-2 font-bold uppercase">Comparar contra</label>
