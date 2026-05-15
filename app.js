@@ -5,7 +5,7 @@ import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, delet
 
 // --- CONFIGURACIÓN ---
 const firebaseConfig = {
-    apiKey: "AIzaSyA11UK2o8-EgE9vTTcw-eeA55yC-n9eZIg",
+    apiKey: "AIzaSyDjz1zkuKIMw31cD4Clti6Cb2derh-lug0",
     authDomain: "app-autos-electricos-5a311.firebaseapp.com",
     projectId: "app-autos-electricos-5a311",
     storageBucket: "app-autos-electricos-5a311.firebasestorage.app",
