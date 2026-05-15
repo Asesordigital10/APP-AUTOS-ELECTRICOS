@@ -25,7 +25,10 @@
         <div class="relative mb-8"><img src="logoasys.png" class="w-32 h-32 object-contain relative z-10"><div class="absolute inset-0 bg-blue-500/30 blur-3xl rounded-full"></div></div>
         <h1 class="text-4xl font-black italic tracking-tighter text-white mb-2">ASYS AUTO</h1>
         <p class="text-zinc-500 text-sm mb-12 uppercase tracking-widest font-bold">Gestión PRO de Energía</p>
-        <button onclick="loginGoogle()" class="flex items-center gap-4 bg-white text-black px-8 py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition-transform"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6 h-6"> Entrar con Google</button>
+        <!-- BOTÓN DE LOGIN -->
+        <button onclick="window.loginGoogle()" class="flex items-center gap-4 bg-white text-black px-8 py-4 rounded-2xl font-bold shadow-xl active:scale-95 transition-transform">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6 h-6"> Entrar con Google
+        </button>
     </div>
 
     <!-- APP PRINCIPAL -->
@@ -33,20 +36,20 @@
         <div class="flex justify-center mb-6"><img src="logoasys.png" class="w-24 h-24 object-contain"></div>
         <header class="flex justify-between items-center mb-8">
             <div><h1 id="user-display-name" class="text-xl font-black italic tracking-tighter text-blue-500 leading-none">...</h1><p id="car-display-model" class="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Telemetría Activa</p></div>
-            <button onclick="toggleConfig()" class="p-3 bg-zinc-900 border border-zinc-800 rounded-2xl active:scale-90 transition-transform shadow-lg"><i data-lucide="settings" class="w-5 h-5 text-zinc-400"></i></button>
+            <button onclick="window.toggleConfig()" class="p-3 bg-zinc-900 border border-zinc-800 rounded-2xl active:scale-90 transition-transform shadow-lg"><i data-lucide="settings" class="w-5 h-5 text-zinc-400"></i></button>
         </header>
 
         <div id="card-bateria"></div>
 
-        <!-- ASISTENTE IA MULTIMODAL -->
+        <!-- ASISTENTE IA -->
         <section class="bg-zinc-900/40 p-6 rounded-[3.5rem] border border-zinc-800/50 mb-8 backdrop-blur-md">
             <div class="flex justify-between items-center mb-6"><div class="flex items-center gap-2"><div class="p-2 bg-blue-500/10 rounded-lg text-blue-500"><i data-lucide="eye" class="w-4 h-4"></i></div><h3 class="text-xs font-black uppercase tracking-widest text-zinc-300">Escáner Inteligente</h3></div></div>
-            <div id="container-preview" class="hidden mb-4 relative"><img id="img-preview" class="w-full h-40 object-cover rounded-2xl border border-zinc-700"><button onclick="quitarFoto()" class="absolute top-2 right-2 bg-black/50 p-2 rounded-full text-white"><i data-lucide="x" class="w-4 h-4"></i></button></div>
+            <div id="container-preview" class="hidden mb-4 relative"><img id="img-preview" class="w-full h-40 object-cover rounded-2xl border border-zinc-700"><button onclick="window.quitarFoto()" class="absolute top-2 right-2 bg-black/50 p-2 rounded-full text-white"><i data-lucide="x" class="w-4 h-4"></i></button></div>
             <div class="flex gap-2 mb-4">
                 <button onclick="document.getElementById('input-foto').click()" class="bg-zinc-800 p-4 rounded-2xl text-zinc-400"><i data-lucide="camera" class="w-5 h-5"></i></button>
-                <input type="file" id="input-foto" accept="image/*" class="hidden" onchange="previsualizarFoto()">
+                <input type="file" id="input-foto" accept="image/*" class="hidden" onchange="window.previsualizarFoto()">
                 <input type="text" id="input-busqueda" class="flex-grow bg-black border border-zinc-800 p-4 rounded-2xl text-sm text-white outline-none" placeholder="Pregunta o sube una foto...">
-                <button onclick="preguntarIA()" class="bg-blue-600 p-4 rounded-2xl"><i data-lucide="send" class="w-4 h-4 text-white"></i></button>
+                <button onclick="window.preguntarIA()" class="bg-blue-600 p-4 rounded-2xl"><i data-lucide="send" class="w-4 h-4 text-white"></i></button>
             </div>
             <div id="sugerencias-manual" class="space-y-4"></div>
         </section>
@@ -57,13 +60,13 @@
         </div>
 
         <section class="bg-zinc-900/40 p-6 rounded-[2.5rem] border border-zinc-800/50 mb-6 backdrop-blur-md">
-            <form onsubmit="registrarCargaForm(event)" class="space-y-4">
+            <form onsubmit="window.registrarCarga(event)" class="space-y-4">
                 <div><label class="text-[10px] font-black text-zinc-500 uppercase ml-2 mb-1 block">Kilómetros a la carga</label><input type="number" id="km" required class="w-full bg-black border border-zinc-800 p-4 text-center text-2xl font-black text-white" placeholder="00000"></div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div><label class="text-[10px] font-black text-zinc-500 uppercase ml-2 mb-1 block">% Inicial</label><input type="number" id="bat-inicio" oninput="actualizarPreview()" required class="w-full bg-black border border-zinc-800 p-4 text-center text-xl font-bold text-orange-400" placeholder="0"></div>
-                    <div><label class="text-[10px] font-black text-zinc-500 uppercase ml-2 mb-1 block">% Final</label><input type="number" id="bat-fin" oninput="actualizarPreview()" required class="w-full bg-black border border-zinc-800 p-4 text-center text-xl font-bold text-green-400" placeholder="100"></div>
+                    <div><label class="text-[10px] font-black text-zinc-500 uppercase ml-2 mb-1 block">% Inicial</label><input type="number" id="bat-inicio" oninput="window.actualizarPreview()" required class="w-full bg-black border border-zinc-800 p-4 text-center text-xl font-bold text-orange-400" placeholder="0"></div>
+                    <div><label class="text-[10px] font-black text-zinc-500 uppercase ml-2 mb-1 block">% Final</label><input type="number" id="bat-fin" oninput="window.actualizarPreview()" required class="w-full bg-black border border-zinc-800 p-4 text-center text-xl font-bold text-green-400" placeholder="100"></div>
                 </div>
-                <select id="tipo-tarifa" onchange="actualizarPreview()" required class="w-full bg-black border border-zinc-800 p-4 font-bold text-zinc-400 appearance-none text-center"><option value="">SELECCIONAR TARIFA</option><option value="hogarValle">Hogar (Tarifa Valle)</option><option value="uteLenta">Punto UTE (Lento)</option><option value="uteRapida">Punto UTE (Rápido)</option><option value="wallboxEspecial">Otros</option></select>
+                <select id="tipo-tarifa" onchange="window.actualizarPreview()" required class="w-full bg-black border border-zinc-800 p-4 font-bold text-zinc-400 appearance-none text-center"><option value="">SELECCIONAR TARIFA</option><option value="hogarValle">Hogar (Tarifa Valle)</option><option value="uteLenta">Punto UTE (Lento)</option><option value="uteRapida">Punto UTE (Rápido)</option><option value="wallboxEspecial">Otros</option></select>
                 <div id="preview-costo" class="text-center py-2 text-[10px] font-mono text-zinc-700 tracking-widest uppercase italic">ESPERANDO DATOS</div>
                 <label class="flex justify-between items-center bg-black/30 p-4 rounded-2xl border border-zinc-800 cursor-pointer"><span class="text-xs font-bold uppercase text-zinc-400 italic">¿Carga al 100%?</span><input type="checkbox" id="es-cien" class="w-6 h-6 rounded-lg accent-blue-600"></label>
                 <button type="submit" class="w-full bg-blue-600 p-5 rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-transform shadow-xl">Registrar Carga</button>
@@ -72,21 +75,21 @@
 
         <div class="bg-zinc-900 border border-zinc-800 p-8 rounded-[2.5rem] text-center mb-6 shadow-2xl relative overflow-hidden"><p class="text-zinc-500 text-[10px] uppercase font-black tracking-widest mb-1">Ahorro Real</p><p id="ahorro-valor" class="text-6xl font-black text-green-500 italic tracking-tighter mb-1">$ 0</p><div id="fuel-selectors" class="mt-6 grid grid-cols-2 gap-2"></div></div>
         <div id="card-mantenimiento" class="mb-8"></div>
-        <div class="flex justify-between items-center mb-4"><h3 class="text-[10px] font-black uppercase text-zinc-800 tracking-[0.2em]">Bitácora</h3><button onclick="exportarExcel()" class="text-blue-500 text-[10px] font-black uppercase flex items-center gap-1 bg-blue-500/10 px-3 py-1.5 rounded-full"><i data-lucide="download" class="w-3"></i> Exportar Excel</button></div>
+        <div class="flex justify-between items-center mb-4"><h3 class="text-[10px] font-black uppercase text-zinc-800 tracking-[0.2em]">Bitácora</h3><button onclick="window.exportarExcel()" class="text-blue-500 text-[10px] font-black uppercase flex items-center gap-1 bg-blue-500/10 px-3 py-1.5 rounded-full"><i data-lucide="download" class="w-3"></i> Exportar Excel</button></div>
         <div id="lista-cargas" class="space-y-2"></div>
     </div>
 
     <!-- MODAL CONFIGURACIÓN -->
     <div id="modal-config" class="fixed inset-0 bg-black/95 backdrop-blur-xl z-50 p-8 hidden flex flex-col no-scrollbar overflow-y-auto">
-        <div class="flex justify-between items-center mb-10"><h2 class="text-xl font-black uppercase italic text-blue-500">Ajustes</h2><button onclick="toggleConfig()" class="text-zinc-500 p-2"><i data-lucide="x"></i></button></div>
+        <div class="flex justify-between items-center mb-10"><h2 class="text-xl font-black uppercase italic text-blue-500">Ajustes</h2><button onclick="window.toggleConfig()" class="text-zinc-500 p-2"><i data-lucide="x"></i></button></div>
         <div class="space-y-8 pb-10">
             <div class="space-y-4"><p class="text-[9px] font-black text-zinc-600 uppercase tracking-widest border-b border-zinc-900 pb-2 italic">Propietario y Vehículo</p><input id="conf-nombre" type="text" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold" placeholder="Nombre en App"><input id="conf-modelo" type="text" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold" placeholder="Marca y Modelo"><input id="conf-matricula" type="text" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold" placeholder="Matrícula"></div>
             <div class="space-y-4"><p class="text-[9px] font-black text-green-500/50 uppercase tracking-widest border-b border-zinc-900 pb-2 italic">Precios Energía ($/kWh)</p><div class="grid grid-cols-2 gap-4"><div class="space-y-1"><label class="text-[8px] text-zinc-500 uppercase ml-2 italic">Hogar Valle</label><input id="p-hogar" type="number" step="0.01" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold"></div><div class="space-y-1"><label class="text-[8px] text-zinc-500 uppercase ml-2 italic">UTE Lenta</label><input id="p-ute-l" type="number" step="0.01" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold"></div><div class="space-y-1"><label class="text-[8px] text-zinc-500 uppercase ml-2 italic">UTE Rápida</label><input id="p-ute-r" type="number" step="0.01" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold"></div><div class="space-y-1"><label class="text-[8px] text-zinc-500 uppercase ml-2 italic">Otros/Wallbox</label><input id="p-wallbox" type="number" step="0.01" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold"></div></div></div>
             <div class="space-y-4"><p class="text-[9px] font-black text-blue-500/50 uppercase tracking-widest border-b border-zinc-900 pb-2 italic">Precios Nafta ($/L)</p><div class="grid grid-cols-2 gap-4"><div class="space-y-1"><label class="text-[8px] text-zinc-500 uppercase ml-2 italic">Super 95</label><input id="p-super" type="number" step="0.01" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold"></div><div class="space-y-1"><label class="text-[8px] text-zinc-500 uppercase ml-2 italic">Premium 97</label><input id="p-premium" type="number" step="0.01" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold"></div><div class="space-y-1"><label class="text-[8px] text-zinc-500 uppercase ml-2 italic">Gasoil 10S</label><input id="p-gasoil10" type="number" step="0.01" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold"></div><div class="space-y-1"><label class="text-[8px] text-zinc-500 uppercase ml-2 italic">Gasoil 50-S</label><input id="p-gasoil50" type="number" step="0.01" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold"></div></div></div>
             <div><label class="text-[10px] text-zinc-500 block mb-2 font-bold uppercase tracking-widest">Combustible utilizado antes</label><select id="conf-tipo-nafta" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold"><option value="Super 95">Super 95</option><option value="Premium 97">Premium 97</option><option value="Gasoil 10S">Gasoil 10S</option><option value="Gasoil 50-S">Gasoil 50-S</option></select></div>
             <div class="space-y-4"><p class="text-[9px] font-black text-zinc-600 uppercase tracking-widest border-b border-zinc-900 pb-2 italic">Taller y Service</p><input id="conf-taller" type="text" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold" placeholder="Nombre del Taller"><input id="conf-taller-dir" type="text" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold" placeholder="Dirección"><input id="conf-taller-tel" type="text" class="w-full bg-zinc-900 border border-zinc-800 p-4 text-white font-bold" placeholder="WhatsApp (Ej: 59899123456)"></div>
-            <button onclick="guardarConfig(event)" class="w-full bg-blue-600 p-5 rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-transform shadow-xl">Guardar Configuración</button>
-            <button onclick="logout()" class="w-full bg-red-900/20 text-red-500 p-5 rounded-2xl font-black uppercase tracking-widest border border-red-900/50">Cerrar Sesión</button>
+            <button onclick="window.guardarConfig(event)" class="w-full bg-blue-600 p-5 rounded-2xl font-black uppercase tracking-widest active:scale-95 transition-transform shadow-xl">Guardar Configuración</button>
+            <button onclick="window.logout()" class="w-full bg-red-900/20 text-red-500 p-5 rounded-2xl font-black uppercase tracking-widest border border-red-900/50">Cerrar Sesión</button>
         </div>
     </div>
 </body>
