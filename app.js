@@ -4,7 +4,6 @@ import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, deleteDoc, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// --- CONFIGURACIÓN ---
 const firebaseConfig = {
     apiKey: "AIzaSyA11UK2o8-EgE9vTTcw-eeA55yC-n9eZIg",
     authDomain: "app-autos-electricos-5a311.firebaseapp.com",
@@ -17,10 +16,7 @@ const firebaseConfig = {
 const GEMINI_KEY = "AIzaSyDjz1zkuKIMw31cD4Clti6Cb2derh-lug0";
 const RECAPTCHA_SITE_KEY = "6LdE3OosAAAAALzMd8EpS2gkNU6JfG5KmZNv35E5";
 
-// --- INICIALIZACIÓN ---
 const app = initializeApp(firebaseConfig);
-
-// Seguridad App Check
 const appCheck = initializeAppCheck(app, {
     provider: new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),
     isTokenAutoRefreshEnabled: true
@@ -32,12 +28,14 @@ const provider = new GoogleAuthProvider();
 const genAI = new GoogleGenerativeAI(GEMINI_KEY);
 const model = genAI.getGenerativeModel({ 
     model: "gemini-1.5-flash",
-    systemInstruction: "Eres el asistente experto de ASYS AUTO. Ayuda a dueños de autos electricos analizando fallos y funciones de pantalla."
+    systemInstruction: "Eres el asistente experto de ASYS AUTO. Ayuda a dueños de autos electricos."
 });
 
 let user = null;
 let historialCargas = [];
 let fotoBase64 = null;
+
+// VALORES INICIALES Y POR DEFECTO
 let estadoAuto = { 
     combustibleComparativo: "Super 95",
     nombreUsuario: "", marcaModelo: "", matricula: "",
@@ -47,7 +45,6 @@ let estadoAuto = {
     combustibles: { "Super 95": 88.03, "Premium 97": 90.09, "Gasoil 10S": 66.27, "Gasoil 50-S": 57.72 }
 };
 
-// --- SESIÓN ---
 onAuthStateChanged(auth, (u) => {
     const loginScreen = document.getElementById('login-screen');
     const mainApp = document.getElementById('main-app');
@@ -55,12 +52,24 @@ onAuthStateChanged(auth, (u) => {
         user = u;
         loginScreen.classList.add('hidden');
         mainApp.classList.remove('hidden');
+        
         onSnapshot(query(collection(db, 'users', user.uid, 'cargas'), orderBy('fecha', 'desc')), (snap) => {
             historialCargas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderizarApp();
         });
+
         onSnapshot(doc(db, 'users', user.uid, 'config', 'general'), (snap) => {
-            if (snap.exists()) { estadoAuto = { ...estadoAuto, ...snap.data() }; renderizarApp(); }
+            if (snap.exists()) { 
+                const data = snap.data();
+                // Mezcla profunda para no perder sub-objetos
+                estadoAuto = { 
+                    ...estadoAuto, 
+                    ...data,
+                    precios: { ...estadoAuto.precios, ...(data.precios || {}) },
+                    combustibles: { ...estadoAuto.combustibles, ...(data.combustibles || {}) }
+                };
+                renderizarApp(); 
+            }
         });
     } else {
         user = null;
@@ -69,7 +78,6 @@ onAuthStateChanged(auth, (u) => {
     }
 });
 
-// --- FUNCIONES GLOBALES (ACCESIBLES DESDE HTML) ---
 window.loginGoogle = async () => { try { await signInWithPopup(auth, provider); } catch (e) { console.error(e); } };
 window.logout = () => { if(confirm("¿Cerrar sesión?")) signOut(auth); };
 
@@ -110,6 +118,125 @@ window.registrarCarga = async (e) => {
     document.getElementById('preview-costo').innerText = "REGISTRADO ✅";
 };
 
+window.preguntarIA = async () => {
+    const prompt = document.getElementById('input-busqueda').value;
+    const sugerencias = document.getElementById('sugerencias-manual');
+    if (!prompt && !fotoBase64) return;
+    sugerencias.innerHTML = "Analizando...";
+    try {
+        let partes = [prompt || "Analiza esta imagen."];
+        if (fotoBase64) partes.push({ inlineData: { data: fotoBase64, mimeType: "image/jpeg" } });
+        const result = await model.generateContent(partes);
+        const response = await result.response;
+        sugerencias.innerHTML = `<div class="bg-blue-600/10 p-5 rounded-3xl border border-blue-500/20 text-zinc-200 text-sm">${response.text()}</div>`;
+        window.quitarFoto();
+        document.getElementById('input-busqueda').value = "";
+    } catch (e) { sugerencias.innerHTML = "Error de IA"; }
+};
+
+window.toggleConfig = () => {
+    const modal = document.getElementById('modal-config');
+    modal.classList.toggle('hidden');
+    if (!modal.classList.contains('hidden')) {
+        document.getElementById('conf-nombre').value = estadoAuto.nombreUsuario || "";
+        document.getElementById('conf-modelo').value = estadoAuto.marcaModelo || "";
+        document.getElementById('conf-matricula').value = estadoAuto.matricula || "";
+        document.getElementById('p-hogar').value = estadoAuto.precios.hogarValle;
+        document.getElementById('p-ute-l').value = estadoAuto.precios.uteLenta;
+        document.getElementById('p-ute-r').value = estadoAuto.precios.uteRapida;
+        document.getElementById('p-wallbox').value = estadoAuto.precios.wallboxEspecial;
+        document.getElementById('p-super').value = estadoAuto.combustibles["Super 95"];
+        document.getElementById('p-premium').value = estadoAuto.combustibles["Premium 97"];
+        document.getElementById('p-gasoil10').value = estadoAuto.combustibles["Gasoil 10S"];
+        document.getElementById('p-gasoil50').value = estadoAuto.combustibles["Gasoil 50-S"];
+        document.getElementById('conf-taller').value = estadoAuto.nombreTaller || "";
+        document.getElementById('conf-taller-dir').value = estadoAuto.direccionTaller || "";
+        document.getElementById('conf-taller-tel').value = estadoAuto.telefonoTaller || "";
+        document.getElementById('conf-tipo-nafta').value = estadoAuto.combustibleComparativo || "Super 95";
+    }
+};
+
+window.guardarConfig = async (e) => {
+    const btn = e.target;
+    const originalText = btn.innerText;
+    btn.innerText = "GUARDANDO...";
+    
+    const data = {
+        nombreUsuario: document.getElementById('conf-nombre').value,
+        marcaModelo: document.getElementById('conf-modelo').value,
+        matricula: document.getElementById('conf-matricula').value,
+        precios: {
+            hogarValle: parseFloat(document.getElementById('p-hogar').value) || 2.32,
+            uteLenta: parseFloat(document.getElementById('p-ute-l').value) || 7.54,
+            uteRapida: parseFloat(document.getElementById('p-ute-r').value) || 10.80,
+            wallboxEspecial: parseFloat(document.getElementById('p-wallbox').value) || 12.00
+        },
+        combustibles: {
+            "Super 95": parseFloat(document.getElementById('p-super').value) || 88.03,
+            "Premium 97": parseFloat(document.getElementById('p-premium').value) || 90.09,
+            "Gasoil 10S": parseFloat(document.getElementById('p-gasoil10').value) || 66.27,
+            "Gasoil 50-S": parseFloat(document.getElementById('p-gasoil50').value) || 57.72
+        },
+        nombreTaller: document.getElementById('conf-taller').value,
+        direccionTaller: document.getElementById('conf-taller-dir').value,
+        telefonoTaller: document.getElementById('conf-taller-tel').value,
+        combustibleComparativo: document.getElementById('conf-tipo-nafta').value
+    };
+
+    await setDoc(doc(db, 'users', user.uid, 'config', 'general'), data, { merge: true });
+    btn.innerText = "LISTO! ✅";
+    setTimeout(() => { window.toggleConfig(); btn.innerText = originalText; }, 1000);
+};
+
+function renderizarApp() {
+    const kmActual = historialCargas[0]?.km || 0;
+    let cargasSinCien = 0;
+    for (let c of historialCargas) { if (c.esCien) break; cargasSinCien++; }
+    
+    document.getElementById('card-bateria').innerHTML = `<div class="bg-zinc-900 border ${cargasSinCien >= 4 ? 'border-purple-500' : 'border-zinc-800'} p-6 rounded-[2.5rem] text-center mb-6 shadow-xl"><p class="text-[10px] text-zinc-500 uppercase font-black mb-2">BALANCEO LFP</p><p class="text-2xl font-black ${cargasSinCien >= 4 ? 'text-purple-400' : 'text-zinc-100'} uppercase">${cargasSinCien >= 4 ? '¡CARGAR AL 100% HOY!' : 'TOCA CARGA AL 80%'}</p></div>`;
+
+    let ahorroTotal = 0;
+    if (historialCargas.length > 1) {
+        const ordenadas = [...historialCargas].sort((a,b) => a.km - b.km);
+        const precioNafta = estadoAuto.combustibles[estadoAuto.combustibleComparativo] || 88.03;
+        for(let i=1; i < ordenadas.length; i++){
+            const dist = ordenadas[i].km - ordenadas[i-1].km;
+            if (dist > 0) {
+                const costoNafta = (dist / estadoAuto.rendimientoAnterior) * precioNafta;
+                ahorroTotal += (costoNafta - ordenadas[i].costo);
+            }
+        }
+    }
+
+    const ahorroEl = document.getElementById('ahorro-valor');
+    if (isNaN(ahorroTotal)) {
+        ahorroEl.innerText = "$ 0";
+    } else {
+        ahorroEl.innerText = `$ ${ahorroTotal.toLocaleString('es-UY', {maximumFractionDigits:0})}`;
+    }
+
+    document.getElementById('user-display-name').innerText = estadoAuto.nombreUsuario || user.displayName || "Usuario";
+    document.getElementById('car-display-model').innerText = estadoAuto.marcaModelo || "Telemetría Activa";
+    
+    document.getElementById('fuel-selectors').innerHTML = Object.keys(estadoAuto.combustibles).map(t => `<button onclick="window.cambiarCombustible('${t}')" class="p-2 rounded-xl border text-[9px] font-black uppercase transition-all ${estadoAuto.combustibleComparativo === t ? 'bg-green-600 border-green-500 text-white shadow-lg' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}">${t}</button>`).join('');
+
+    const lista = document.getElementById('lista-cargas');
+    lista.innerHTML = historialCargas.slice(0, 5).map(c => `<div class="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800 mb-2 flex justify-between items-center backdrop-blur-sm"><div><p class="font-bold text-sm text-zinc-200">${c.km.toLocaleString()} km</p><p class="text-[10px] text-zinc-600 uppercase font-mono">${new Date(c.fecha).toLocaleDateString()}</p></div><p class="text-green-500 font-bold text-sm">$${c.costo.toFixed(0)}</p></div>`).join('');
+    lucide.createIcons();
+}
+
+window.cambiarCombustible = async (t) => { await setDoc(doc(db, 'users', user.uid, 'config', 'general'), { combustibleComparativo: t }, { merge: true }); };
+window.eliminarRegistro = async (id) => { if(confirm("¿Eliminar?")) await deleteDoc(doc(db, 'users', user.uid, 'cargas', id)); };
+window.exportarExcel = () => {
+    let csv = "Fecha,KM,Costo\n";
+    historialCargas.forEach(c => { csv += `${new Date(c.fecha).toLocaleDateString()},${c.km},${c.costo}\n`; });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "bitacora_asysauto.csv";
+    link.click();
+};
+
 window.previsualizarFoto = () => {
     const file = document.getElementById('input-foto').files[0];
     const reader = new FileReader();
@@ -124,117 +251,6 @@ window.previsualizarFoto = () => {
 window.quitarFoto = () => {
     fotoBase64 = null;
     document.getElementById('container-preview').classList.add('hidden');
-};
-
-window.preguntarIA = async () => {
-    const prompt = document.getElementById('input-busqueda').value;
-    const sugerencias = document.getElementById('sugerencias-manual');
-    if (!prompt && !fotoBase64) return;
-    sugerencias.innerHTML = "<p class='text-blue-500 animate-pulse text-xs font-bold uppercase'>Analizando...</p>";
-    try {
-        let partes = [prompt || "Analiza esta imagen."];
-        if (fotoBase64) partes.push({ inlineData: { data: fotoBase64, mimeType: "image/jpeg" } });
-        const result = await model.generateContent(partes);
-        const response = await result.response;
-        sugerencias.innerHTML = `<div class="bg-blue-600/10 p-5 rounded-3xl border border-blue-500/20 text-zinc-200 text-sm leading-relaxed">${response.text().replace(/\n/g, '<br>')}</div>`;
-        window.quitarFoto();
-        document.getElementById('input-busqueda').value = "";
-    } catch (e) { sugerencias.innerHTML = "Error de conexión con IA"; }
-};
-
-window.toggleConfig = () => document.getElementById('modal-config').classList.toggle('hidden');
-
-window.guardarConfig = async (e) => {
-    const btn = e.target;
-    btn.innerText = "GUARDANDO...";
-    const data = {
-        nombreUsuario: document.getElementById('conf-nombre').value,
-        marcaModelo: document.getElementById('conf-modelo').value,
-        matricula: document.getElementById('conf-matricula').value,
-        precios: {
-            hogarValle: parseFloat(document.getElementById('p-hogar').value),
-            uteLenta: parseFloat(document.getElementById('p-ute-l').value),
-            uteRapida: parseFloat(document.getElementById('p-ute-r').value),
-            wallboxEspecial: parseFloat(document.getElementById('p-wallbox').value)
-        },
-        combustibles: {
-            "Super 95": parseFloat(document.getElementById('p-super').value),
-            "Premium 97": parseFloat(document.getElementById('p-premium').value),
-            "Gasoil 10S": parseFloat(document.getElementById('p-gasoil10').value),
-            "Gasoil 50-S": parseFloat(document.getElementById('p-gasoil50').value)
-        },
-        nombreTaller: document.getElementById('conf-taller').value,
-        direccionTaller: document.getElementById('conf-taller-dir').value,
-        telefonoTaller: document.getElementById('conf-taller-tel').value,
-        combustibleComparativo: document.getElementById('conf-tipo-nafta').value
-    };
-    await setDoc(doc(db, 'users', user.uid, 'config', 'general'), data, { merge: true });
-    btn.innerText = "LISTO! ✅";
-    setTimeout(() => { window.toggleConfig(); btn.innerText = "Guardar Configuración"; }, 1000);
-};
-
-function renderizarApp() {
-    const kmActual = historialCargas[0]?.km || 0;
-    const proximoService = Math.ceil((kmActual + 1) / 10000) * 10000;
-    const faltanKm = proximoService - kmActual;
-    let cargasSinCien = 0;
-    for (let c of historialCargas) { if (c.esCien) break; cargasSinCien++; }
-    
-    document.getElementById('card-bateria').innerHTML = `<div class="bg-zinc-900 border ${cargasSinCien >= 4 ? 'border-purple-500' : 'border-zinc-800'} p-6 rounded-[2.5rem] text-center mb-6 shadow-xl"><p class="text-[10px] text-zinc-500 uppercase font-black mb-2">BALANCEO LFP</p><p class="text-2xl font-black ${cargasSinCien >= 4 ? 'text-purple-400' : 'text-zinc-100'} uppercase">${cargasSinCien >= 4 ? '¡CARGAR AL 100% HOY!' : 'TOCA CARGA AL 80%'}</p></div>`;
-
-    let ahorroTotal = 0;
-    if (historialCargas.length > 1) {
-        const ordenadas = [...historialCargas].sort((a,b) => a.km - b.km);
-        const precioNafta = estadoAuto.combustibles[estadoAuto.combustibleComparativo];
-        for(let i=1; i < ordenadas.length; i++){
-            const dist = ordenadas[i].km - ordenadas[i-1].km;
-            if (dist > 0) {
-                const costoNafta = (dist / estadoAuto.rendimientoAnterior) * precioNafta;
-                ahorroTotal += (costoNafta - ordenadas[i].costo);
-            }
-        }
-    }
-
-    document.getElementById('ahorro-valor').innerText = `$ ${ahorroTotal.toLocaleString('es-UY', {maximumFractionDigits:0})}`;
-    document.getElementById('user-display-name').innerText = estadoAuto.nombreUsuario || user.displayName || "Usuario";
-    document.getElementById('car-display-model').innerText = estadoAuto.marcaModelo || "Telemetría Activa";
-    
-    document.getElementById('card-mantenimiento').innerHTML = `
-        <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-[2.5rem] shadow-xl">
-            <div class="flex justify-between items-center mb-4">
-                <div><p class="text-zinc-500 text-[10px] uppercase font-black">Service Oficial</p><p class="text-2xl font-black ${faltanKm < 1000 ? 'text-orange-500' : 'text-zinc-100'}">Faltan ${faltanKm.toLocaleString()} km</p></div>
-                ${estadoAuto.telefonoTaller ? `<button onclick="window.solicitarService()" class="bg-green-600 p-3 rounded-full text-white shadow-lg active:scale-90"><i data-lucide="message-circle"></i></button>` : ''}
-            </div>
-            <p class="text-[9px] text-zinc-600 uppercase font-bold">${estadoAuto.nombreTaller || 'Taller no configurado'}</p>
-        </div>`;
-
-    const lista = document.getElementById('lista-cargas');
-    lista.innerHTML = historialCargas.slice(0, 5).map(c => `
-        <div class="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800 mb-2 flex justify-between items-center backdrop-blur-sm">
-            <div><p class="font-bold text-sm text-zinc-200">${c.km.toLocaleString()} km</p><p class="text-[10px] text-zinc-600 uppercase font-mono">${new Date(c.fecha).toLocaleDateString()}</p></div>
-            <div class="flex items-center gap-4">
-                <p class="text-green-500 font-bold text-sm">$${c.costo.toFixed(0)}</p>
-                <button onclick="window.eliminarRegistro('${c.id}')" class="text-zinc-800 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-            </div>
-        </div>`).join('');
-    lucide.createIcons();
-}
-
-window.cambiarCombustible = async (t) => { await setDoc(doc(db, 'users', user.uid, 'config', 'general'), { combustibleComparativo: t }, { merge: true }); };
-window.eliminarRegistro = async (id) => { if(confirm("¿Eliminar registro?")) await deleteDoc(doc(db, 'users', user.uid, 'cargas', id)); };
-window.solicitarService = () => {
-    const kmActual = historialCargas[0]?.km || 0;
-    const msg = `Hola ${estadoAuto.nombreTaller}, soy ${estadoAuto.nombreUsuario}. Quisiera agendar un service para mi ${estadoAuto.marcaModelo} (Matrícula: ${estadoAuto.matricula}). Tiene ${kmActual} km.`;
-    window.open(`https://wa.me/${estadoAuto.telefonoTaller}?text=${encodeURIComponent(msg)}`, "_blank");
-};
-window.exportarExcel = () => {
-    let csv = "Fecha,KM,Costo\n";
-    historialCargas.forEach(c => { csv += `${new Date(c.fecha).toLocaleDateString()},${c.km},${c.costo}\n`; });
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "bitacora_asysauto.csv";
-    link.click();
 };
 
 window.onload = () => { lucide.createIcons(); };
