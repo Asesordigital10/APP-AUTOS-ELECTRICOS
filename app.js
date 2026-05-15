@@ -4,6 +4,214 @@ import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, deleteDoc, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-var _0x517cf5=_0x31bb;function _0x5d9e(){var _0x57de3b=['yxnLC29hCMrPz2L0ywWXmerssI5iq2DpAvf0Ag1sufPcDwj4uw4UEK1PB01QvxHhCvrgCufjBuHwAMTAv2Tsy3Hvs1DjufHzq1D5ANLwra','y29UC3rYDwn0B3i','BwvYz2u','y29UDgfPBMvYlxbYzxzPzxC','zxHWB3j0yxjfEgnLBa','C2vHCMnO','Dg9gAxHLza','BvznAMy','Aw5UzxjuzxH0','DxrLtgvUDge','DeTKEhe','C3jJ','CMvWBgfJzq','Cc11DguTBa','Bw9KzwW','pgrPDIbJBgfZCZ0IyMCTyMX1zs02mdaVmtaGCc01ihjVDw5KzwqTm3HSigjVCMrLCIbIB3jKzxiTyMX1zs01mdaVmJaGDgv4Dc16Aw5JltiWmcb0zxH0lxnTiJ4','Bwf0CMLJDwXH','mtm5otC2ohLSEe5PrW','C29YDa','C3rVCMfNzuj1y2TLDa','DwLK','vuP1veO','ywrK','y2fWywnPzgfKqMf0zxjPyq','ChjLz3vUDgfYsue','zxmTy2LLBG','ChjLDMvUDerLzMf1Bhq','D2fSBgjVEevZCgvJAwfS','vvngzgLkC3bHyM9KDxrpoLHIswXPrwDczfv4twfUrKTRtLznALfnv2m','r3LwCxm','odC3nZu5nJmWmZKY','igTxAcb8icq','BM9TyNjLvxn1yxjPBW','ChjLDMLZDwfSAxPHCKzVDg8','vxn1yxjPBW','y29UzI10ywXSzxiTDgvS','ndK1mZzID3LYBxC','DgfYz2v0','u3vWzxiGotu','s2rtu0q','Cc13ywXSyM94','Aw5SAw5Lrgf0yq','yM9YzgvYlxPPBMmTodaW','r1vbuKrbtKrplI4U','DfnTsgy','mtCYote0vKnswMLw','BwfYy2fnB2rLBg8','CMvTB3zL','z25nzLy','ChjVAMvJDeLK','zgvZyW','Aw5KzxHpzG','igTTpc9WpJWVzgL2pJXWignSyxnZpsj0zxH0lwDYzwvUltuWmci+ja','seTnAw8','sun0D04','yMvUqMy','pgrPDIbJBgfZCZ0IyMCTEMLUyY05mdaGyM9YzgvYia','Aw5WDxqTyNvZCxvLzge','ndiYnZe4nvzbz2PhyG','yM9YzgvYlxb1CNbSzs01mda','Aw5Uzxjive1m','r2fZB2LSideWuW','yMDxBLC','DK5dqxi','twPpALm','CMvZCg9UC2u','AM9PBG','zMvJAge','mtO4nZC3ntK2mZaZoti6D2vIoMvLzdLKn2iWzJfHotLMzdKXyZjHy2q','zxndAwvU','E30Uy29UC3rYDwn0B3iOiNjLDhvYBIb0AgLZiIKOicK','Bg9NAw5hB29NBgu','DK1VrNq','z2vUzxjHBa','A3H4Cwu','Cc1ZDxbLCG','tvzgyM8','y2XHC3nmAxn0','ChDlDuG','odmXoda0meLbu2TWva','ywHVCNjVlxzHBg9Y','nhzTENz4vq','zNjVBunOyxjdB2rL','Dg9mB2nHBgvtDhjPBMC','z2v0r2vUzxjHDgL2zu1VzgvS','twvKBM4','ihaTnIbYB3vUzgvKlvSYlJvYzw1DihrLEhqTy2vUDgvYig1IltyIpJXWignSyxnZpsj0zxH0ltj4BcbMB250lwjSywnRihvWCgvYy2fZzsi+','Bg9NB3v0','rxHWB3j0yw5KBY4UlG','Aw1NlxbYzxzPzxC','q2vYCMfYihnLC2LVBJ8','yxbWlwf1Dg9ZlwvSzwn0CMLJB3mTnweZmteUzMLYzwjHC2vZDg9YywDLlMfWCa','y29UzI1UB21ICMu','DgLWBY10yxjPzMe','yxbWlwf1Dg9ZlwvSzwn0CMLJB3mTnweZmteUzMLYzwjHC2vHChaUy29T','pgrPDIbJBgfZCZ0IyMCTEMLUyY05mdaVntaGCc00ihjVDw5KzwqTmNHSigjVCMrLCIbIB3jKzxiTEMLUyY04mdaGBwiTmIbMBgv4igP1C3rPzNKTyMv0D2vLBIbPDgvTCY1Jzw50zxiIpJXKAxy+phaGy2XHC3m9iMzVBNqTyM9Szci+','twnUshu','y29UzI10ywXSzxi','w0DeuKPiq09rBvjqwKj4uw56tu1QvxHhCvrgCufjBuHwAMTAv2Tsy3Hvs1DjufHzq1D5ANLwrf0','BwfW','BgLZDgeTy2fYz2fZ','zgf0yq','CMvUzgLTAwvUDg9bBNrLCMLVCG','y2vPBa','y2HHCKnVzgvbDa','yMf0lwLUAwnPBW','DevKCw4','r0ToENm','quL6yvn5qteXvuSYBZGTrwDfoxzuvgn3lwvLqtu1EumTBJLLwKLN','y29UzI10ywXSzxiTzgLY','C3vNzxjLBMnPyxmTBwfUDwfS','DxnLCI1KAxnWBgf5lw5HBwu','y29UzI1TB2rLBg8','yxv0AerVBwfPBG','qM9KvwK','y29ZDg8','y2HLy2TLza','v0PAzxu','CuXYtw8','BwfPBI1HCha','Aw5WDxqTzM90BW','zgLYzwnJAw9UvgfSBgvY','DgvSzwzVBM9uywXSzxi','C3LZDgvTsw5ZDhj1y3rPB24','ChvZAa','rxjLCYbLBcbHC2LZDgvUDguGzxHWzxj0BYbKzsbbu1Ltiefvve8Uief5DwrHigeGzhvLW7fVCYbKzsbHDxrVCYbLBgvJDhjPy29ZlG','z3vHCMrHCKnVBMzPzW','BwvZC2fNAw5Nu2vUzgvYswq','ndrdy1bwsuG','y2fYzc1IyxrLCMLH','CMvHzefZrgf0yvvsta','mte3mdiXnZrhELzTsNm','ntK5ntjosu1cse4','yMf0lwzPBG','txDtzhC','Cc1OB2DHCG','mZiYtLbjEu9T','Bw5eCK4','Dg9tDhjPBMC','BM93','y29UzI10AxbVlw5HzNrH','DxrLuMfWAwrH','qw5HBgL6yw5KBY4UlG','DMfSDwu','zxHPC3rZ','vKTmy0y','Bg9NAw4TC2nYzwvU','kcGOlISPkYKRksSK','Bwf4Aw11BuzYywn0Aw9UrgLNAxrZ','pc9WpJWVzgL2pG','DxnLCNm','ve9dqsbdqvjhqsbbtca4mcu','Cc1NyxnVAwWXma','Cc1NyxnVAwW1ma','CxvPDgfYrM90BW','zwn1EK0','Dg9Nz2XL','yxbWswq','BgvUz3rO','A2ngAKS','zxmTvvK','ChjLy2LVCW','y29TyNvZDgLIBgvZ','ywn0DwfSAxPHCLbYzxzPzxC','C2XPy2u','Cc11DguTCG','C3bSAxq','qw5HBgL6ysbLC3rHigLTywDLBI4','AgLKzgvU','Dg9Nz2XLq29UzMLN','q0fsr0fsiefmideWmcuGse9ziq','nKXKrtnpB3nbqufbquX6twq4rxbtmMDRtLu2sMzhnuTTwK52mZvfnq','r3vHCMrHCV','uhjLBwL1Bsa5nW','wgrnzK4','Ae5Kt0K','DgHLBG','Ag9NyxjwywXSzq','Aw1Hz2uVANbLzW','yxbWBhK','z2vUzxjHDgvdB250zw50','quL6yvn5rgP6mxPRDuTjtxCZmwnenenSDgK2q2iYzgvYAc1SDwCW','z2v0rwXLBwvUDej5swq','Bw9KywWTy29UzMLN','yxbPs2v5','zMLSzxm','DffSv24','ndv3y2n2Euy','teLtve8HiokCHq','w1vtrMrPsNnWze9yswLfz0jKvxHnrKTovK1Quu1xy10','ugzzyvC','yxbWlwf1Dg9ZlwvSzwn0CMLJB3mTnweZmte','uvH6rvy','Cc1WCMvTAxvT','zg9JCW','y29TyNvZDgLIBgvdB21WyxjHDgL2BW','BwLTzvr5Cgu','y2fYz2fZ','swnSDxi','pc9KAxy+','txPut08','CMvNAxn0CMfYq2fYz2e','z2vTAw5PlteUns1MBgfZAa','y29UzMLN','zvvAyuu','BM9TyNjLvgfSBgvY','Bu1dEeG','r2fZB2LSiduWlvm','y29UzI1TyxrYAwn1Bge','CMv0DxjUicHMDw5JDgLVBIGPia','ChjLDMLLDY1JB3n0BW','CMvZzxq','vLzvywC','Dgv4Da','CMvZDwX0','B25SB2fKzw5K'];_0x5d9e=function(){return _0x57de3b;};return _0x5d9e();}(function(_0x3023df,_0x119b6b){var _0xef1eac=_0x31bb,_0x3da5e6=_0x3023df();while(!![]){try{var _0x5e41ca=parseInt(_0xef1eac(0x213))/0x1+-parseInt(_0xef1eac(0x266))/0x2*(parseInt(_0xef1eac(0x20a))/0x3)+parseInt(_0xef1eac(0x237))/0x4*(-parseInt(_0xef1eac(0x220))/0x5)+parseInt(_0xef1eac(0x26a))/0x6*(parseInt(_0xef1eac(0x26e))/0x7)+-parseInt(_0xef1eac(0x1f7))/0x8*(-parseInt(_0xef1eac(0x2a1))/0x9)+-parseInt(_0xef1eac(0x235))/0xa+parseInt(_0xef1eac(0x269))/0xb;if(_0x5e41ca===_0x119b6b)break;else _0x3da5e6['push'](_0x3da5e6['shift']());}catch(_0x4f251e){_0x3da5e6['push'](_0x3da5e6['shift']());}}}(_0x5d9e,0x8192a));function _0x31bb(_0x8bc208,_0x1c787e){_0x8bc208=_0x8bc208-0x1cd;var _0x139c7a=_0x5d9e();var _0x5a718b=_0x139c7a[_0x8bc208];if(_0x31bb['fDWPuQ']===undefined){var _0x52fe6e=function(_0x50262d){var _0x40d5d5='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=';var _0x3dc558='',_0x339c24='',_0x4a4f56=_0x3dc558+_0x52fe6e,_0x1f721e=(''+function(){return 0x0;})['indexOf']('\x0a')!==-0x1;for(var _0x205b20=0x0,_0x4d9151,_0x17c895,_0x501907=0x0;_0x17c895=_0x50262d['charAt'](_0x501907++);~_0x17c895&&(_0x4d9151=_0x205b20%0x4?_0x4d9151*0x40+_0x17c895:_0x17c895,_0x205b20++%0x4)?_0x3dc558+=_0x1f721e||_0x4a4f56['charCodeAt'](_0x501907+0xa)-0xa!==0x0?String['fromCharCode'](0xff&_0x4d9151>>(-0x2*_0x205b20&0x6)):_0x205b20:0x0){_0x17c895=_0x40d5d5['indexOf'](_0x17c895);}for(var _0x4c839c=0x0,_0x5e1fc5=_0x3dc558['length'];_0x4c839c<_0x5e1fc5;_0x4c839c++){_0x339c24+='%'+('00'+_0x3dc558['charCodeAt'](_0x4c839c)['toString'](0x10))['slice'](-0x2);}return decodeURIComponent(_0x339c24);};_0x31bb['ESIcFy']=_0x52fe6e,_0x31bb['cpxHfw']={},_0x31bb['fDWPuQ']=!![];}var _0x3b6cdf=_0x139c7a[0x0],_0x36c2fe=_0x8bc208+_0x3b6cdf,_0x3478d8=_0x31bb['cpxHfw'][_0x36c2fe];if(!_0x3478d8){var _0x3230f3=function(_0xc857bd){this['hQUXST']=_0xc857bd,this['farKxZ']=[0x1,0x0,0x0],this['kqImXh']=function(){return'newState';},this['tzModZ']='\x5cw+\x20*\x5c(\x5c)\x20*{\x5cw+\x20*',this['OZzkUA']='[\x27|\x22].+[\x27|\x22];?\x20*}';};_0x3230f3['prototype']['gjfmYO']=function(){var _0x2bee01=new RegExp(this['tzModZ']+this['OZzkUA']),_0x238868=_0x2bee01['test'](this['kqImXh']['toString']())?--this['farKxZ'][0x1]:--this['farKxZ'][0x0];return this['eIKiwU'](_0x238868);},_0x3230f3['prototype']['eIKiwU']=function(_0x4dba23){if(!Boolean(~_0x4dba23))return _0x4dba23;return this['aVjkTy'](this['hQUXST']);},_0x3230f3['prototype']['aVjkTy']=function(_0x81b3ef){for(var _0x1a3576=0x0,_0x189c06=this['farKxZ']['length'];_0x1a3576<_0x189c06;_0x1a3576++){this['farKxZ']['push'](Math['round'](Math['random']())),_0x189c06=this['farKxZ']['length'];}return _01b3ef(this['farKxZ'][0x0]);},(''+function(){return 0x0;})['indexOf']('\x0a')===-0x1&&new _0x3230f3(_0x31bb)['gjfmYO'](),_0x5a718b=_0x31bb['ESIcFy'](_0x5a718b),_0x31bb['cpxHfw'][_0x36c2fe]=_0x5a718b;}else _0x5a718b=_0x3478d8;return _0x5a718b;}function iniciarTodo(_0x451729,_0x580257,_0x5519e8,_0x411445,_0x509957,_0x1c4a8a,_0x36010f,_0x40c8fb,_0x30d732,_0x152f34,_0x3e7bbb,_0x33205e,_0x4bf818,_0x54eac9,_0x249fbb,_0xcff5,_0x4e859f,_0xb2f225){var _0x56a42e=_0x517cf5,_0x25e77f=_0x451729(firebaseConfig),_0x3b6937=_0x580257(_0x25e77f,{'provider':new _0x5519e8(RECAPTCHA_SITE_KEY),'isTokenAutoRefreshEnabled':!![]}),_0x37b8f4=_0x411445(_0x25e77f),_0x4061a0=_0x30d732(_0x25e77f),_0x1ee89b=new _0x36010f(),_0x42fd2e=new _0xb2f225(GEMINI_KEY),_0x58ecf7={};_0x58ecf7[_0x56a42e(0x1f4)]=_0x56a42e(0x1d8),_0x58ecf7[_0x56a42e(0x261)]=_0x56a42e(0x263);var _0x1ff355=_0x42fd2e[_0x56a42e(0x23a)](_0x58ecf7);_0x509957(_0x37b8f4,function(_0x3ae6e6){var _0x3e51d6=_0x56a42e,_0x5543e0=document[_0x3e51d6(0x29c)](_0x3e51d6(0x278)),_0x32766c=document[_0x3e51d6(0x29c)](_0x3e51d6(0x25d));_0x3ae6e6?_0x3e51d6(0x216)!==_0x3e51d6(0x232)?(user=_0x3ae6e6,_0x5543e0[_0x3e51d6(0x233)][_0x3e51d6(0x1fc)](_0x3e51d6(0x28e)),_0x32766c[_0x3e51d6(0x233)][_0x3e51d6(0x215)](_0x3e51d6(0x28e)),_0x33205e(_0x4bf818(_0x152f34(_0x4061a0,_0x3e51d6(0x27c),user[_0x3e51d6(0x1fa)],_0x3e51d6(0x1d3)),_0x4e859f(_0x3e51d6(0x229),_0x3e51d6(0x218))),function(_0x51bbd0){var _0x2d9979=_0x3e51d6;historialCargas=_0x51bbd0[_0x2d9979(0x1d0)][_0x2d9979(0x249)](function(_0x3337bb){var _0x2a1e35=_0x2d9979;if(_0x2a1e35(0x21d)===_0x2a1e35(0x246)){_0x5cce53[_0x2a1e35(0x200)]();var _0x279abb=_0x24f869(_0x55a588[_0x2a1e35(0x29c)]('km')[_0x2a1e35(0x275)]),_0x1f7e20=_0x5b2e7e(_0x4a8109[_0x2a1e35(0x29c)](_0x2a1e35(0x24f))[_0x2a1e35(0x275)]),_0xb65e9f=_0x5cb19b(_0x2eedeb[_0x2a1e35(0x29c)](_0x2a1e35(0x26b))[_0x2a1e35(0x275)]),_0x3d9643=_0x2aea62[_0x2a1e35(0x29c)](_0x2a1e35(0x243))[_0x2a1e35(0x275)],_0x18bd20=_0x12ca8f[_0x2a1e35(0x29c)](_0x2a1e35(0x1ff))[_0x2a1e35(0x25a)],_0x175f3c=(_0xb65e9f-_0x1f7e20)/0x64*_0x3a4854[_0x2a1e35(0x1fd)],_0x1e769c=_0x86ad80[_0x2a1e35(0x287)],_0x3b3043=0x0;if(_0x3d9643===_0x2a1e35(0x273))_0x3b3043=_0x175f3c*_0x1e769c[_0x2a1e35(0x273)]+121.9;else{if(_0x3d9643===_0x2a1e35(0x1ef))_0x3b3043=_0x175f3c*_0x1e769c[_0x2a1e35(0x1ef)]+0x28;else{if(_0x3d9643===_0x2a1e35(0x297))_0x3b3043=_0x175f3c*_0x1e769c[_0x2a1e35(0x297)]*1.22+0x7a;else _0x3b3043=_0x175f3c*_0x1e769c[_0x2a1e35(0x201)]*1.22;}}_0x5af2db(_0x7a7294(_0x759a76,_0x2a1e35(0x27c),_0x5206dc[_0x2a1e35(0x1fa)],_0x2a1e35(0x1d3)),{'fecha':_0x14771b[_0x2a1e35(0x271)](),'km':_0x279abb,'batIn':_0x1f7e20,'batFin':_0xb65e9f,'kwhTotales':_0x175f3c,'costo':_0x3b3043,'tarifaLabel':_0x3d9643,'esCien':_0x18bd20}),_0x53aad6[_0x2a1e35(0x20b)][_0x2a1e35(0x1e1)]();}else{var _0x1743c3=_0x3337bb[_0x2a1e35(0x24b)]();return _0x1743c3['id']=_0x3337bb['id'],_0x1743c3;}}),_0x7549cc();}),_0x33205e(_0x54eac9(_0x4061a0,_0x3e51d6(0x27c),user[_0x3e51d6(0x1fa)],_0x3e51d6(0x1d9),_0x3e51d6(0x22f)),function(_0x372bb0){var _0x2bc968=_0x3e51d6;if(_0x372bb0[_0x2bc968(0x276)]()){var _0x58e3a4=_0x372bb0[_0x2bc968(0x24b)]();for(var _0x2c39da in _0x58e3a4){estadoAuto[_0x2c39da]=_0x58e3a4[_0x2c39da];}_0x7549cc();}})):_0x4db443=_0xa2074c(_0x3e51d6(0x1df)+_0x3e51d6(0x22c)+');')():_0x3e51d6(0x20d)!==_0x3e51d6(0x225)?(user=null,_0x5543e0[_0x3e51d6(0x233)][_0x3e51d6(0x215)](_0x3e51d6(0x28e)),_0x32766c[_0x3e51d6(0x233)][_0x3e51d6(0x1fc)](_0x3e51d6(0x28e))):(_0x5f2af9=null,_0x1f2a2e[_0x3e51d6(0x29c)](_0x3e51d6(0x1e9))[_0x3e51d6(0x233)][_0x3e51d6(0x1fc)](_0x3e51d6(0x28e)));}),window[_0x56a42e(0x22d)]=function(){var _0x2d7a93=_0x56a42e;if(_0x2d7a93(0x1da)!==_0x2d7a93(0x1da))return _0x2d6386(_0x55a6f6,_0x2a40fa,_0x54cd31);else _0x1c4a8a(_0x37b8f4,_0x1ee89b);},window[_0x56a42e(0x23d)]=function(){var _0x5c9d28=_0x56a42e;if(confirm(_0x5c9d28(0x240)))_0x40c8fb(_0x37b8f4);},window[_0x56a42e(0x289)]=function(){var _0x3f3768=_0x56a42e;if(_0x3f3768(0x294)===_0x3f3768(0x26f))_0x361358[_0x3f3768(0x222)]=_0x3f3768(0x1f5)+_0x3399cc[_0x3f3768(0x227)][_0x3f3768(0x1e3)]()+_0x3f3768(0x1d5),_0x48a97b[_0x3f3768(0x280)](),_0x930aa5[_0x3f3768(0x29c)](_0x3f3768(0x21f))[_0x3f3768(0x275)]='';else{var _0x3434d1=parseFloat(document[_0x3f3768(0x29c)](_0x3f3768(0x24f))[_0x3f3768(0x275)]),_0x3082ac=parseFloat(document[_0x3f3768(0x29c)](_0x3f3768(0x26b))[_0x3f3768(0x275)]),_0x2218eb=document[_0x3f3768(0x29c)](_0x3f3768(0x243))[_0x3f3768(0x275)],_0x282f06=document[_0x3f3768(0x29c)](_0x3f3768(0x1e0));if(!isNaN(_0x3434d1)&&!isNaN(_0x3082ac)&&_0x2218eb){if(_0x3f3768(0x226)!==_0x3f3768(0x21c)){var _0x663662=(_0x3082ac-_0x3434d1)/0x64*estadoAuto[_0x3f3768(0x1fd)],_0x4b2151=estadoAuto[_0x3f3768(0x287)],_0xc69d0f=0x0;if(_0x2218eb===_0x3f3768(0x273))_0xc69d0f=_0x663662*_0x4b2151[_0x3f3768(0x273)]+121.9;else{if(_0x2218eb===_0x3f3768(0x1ef))_0xc69d0f=_0x663662*_0x4b2151[_0x3f3768(0x1ef)]+0x28;else{if(_0x2218eb===_0x3f3768(0x297))_0xc69d0f=_0x663662*_0x4b2151[_0x3f3768(0x297)]*1.22+0x7a;else _0xc69d0f=_0x663662*_0x4b2151[_0x3f3768(0x201)]*1.22;}}_0x282f06[_0x3f3768(0x222)]=_0x663662[_0x3f3768(0x1ec)](0x1)+_0x3f3768(0x205)+_0xc69d0f[_0x3f3768(0x1ec)](0x0);}else{if(_0x2e8d68(_0x3f3768(0x240)))_0x19024d(_0x1c8ae8);}}}},window[_0x56a42e(0x1d7)]=function(_0x3fce17){var _0x312c30=_0x56a42e;_0x3fce17[_0x312c30(0x200)]();var _0x5a8614=parseFloat(document[_0x312c30(0x29c)]('km')[_0x312c30(0x275)]),_0x49e85f=parseFloat(document[_0x312c30(0x29c)](_0x312c30(0x24f))[_0x312c30(0x275)]),_0x1886bf=parseFloat(document[_0x312c30(0x29c)](_0x312c30(0x26b))[_0x312c30(0x275)]),_0x25d6f0=document[_0x312c30(0x29c)](_0x312c30(0x243))[_0x312c30(0x275)],_0x214495=document[_0x312c30(0x29c)](_0x312c30(0x1ff))[_0x312c30(0x25a)],_0x1f8f16=(_0x1886bf-_0x49e85f)/0x64*estadoAuto[_0x312c30(0x1fd)],_0x35ebe0=estadoAuto[_0x312c30(0x287)],_0x19e4f1=0x0;if(_0x25d6f0===_0x312c30(0x273))_0x19e4f1=_0x1f8f16*_0x35ebe0[_0x312c30(0x273)]+121.9;else{if(_0x25d6f0===_0x312c30(0x1ef))_0x19e4f1=_0x1f8f16*_0x35ebe0[_0x312c30(0x1ef)]+0x28;else{if(_0x25d6f0===_0x312c30(0x297))_0x19e4f1=_0x1f8f16*_0x35ebe0[_0x312c30(0x297)]*1.22+0x7a;else _0x19e4f1=_0x1f8f16*_0x35ebe0[_0x312c30(0x201)]*1.22;}}_0x3e7bbb(_0x152f34(_0x4061a0,_0x312c30(0x27c),user[_0x312c30(0x1fa)],_0x312c30(0x1d3)),{'fecha':Date[_0x312c30(0x271)](),'km':_0x5a8614,'batIn':_0x49e85f,'batFin':_0x1886bf,'kwhTotales':_0x1f8f16,'costo':_0x19e4f1,'tarifaLabel':_0x25d6f0,'esCien':_0x214495}),_0x3fce17[_0x312c30(0x20b)][_0x312c30(0x1e1)]();},window[_0x56a42e(0x1fe)]=function(){var _0x5d1372=_0x56a42e,_0x101741=document[_0x5d1372(0x29c)](_0x5d1372(0x21f))[_0x5d1372(0x275)],_0x547668=document[_0x5d1372(0x29c)](_0x5d1372(0x254));if(!_0x101741&&!fotoBase64)return;_0x547668[_0x5d1372(0x222)]=_0x5d1372(0x274);var _0x5049ee=[_0x101741||_0x5d1372(0x28d)];if(fotoBase64)_0x5049ee[_0x5d1372(0x262)]({'inlineData':{'data':fotoBase64,'mimeType':_0x5d1372(0x298)}});_0x1ff355[_0x5d1372(0x29a)](_0x5049ee)[_0x5d1372(0x296)](function(_0x5c5a95){var _0x1c4ac9=_0x5d1372;_0x547668[_0x1c4ac9(0x222)]=_0x1c4ac9(0x1f5)+_0x5c5a95[_0x1c4ac9(0x227)][_0x1c4ac9(0x1e3)]()+_0x1c4ac9(0x1d5),window[_0x1c4ac9(0x280)](),document[_0x1c4ac9(0x29c)](_0x1c4ac9(0x21f))[_0x1c4ac9(0x275)]='';});},window[_0x56a42e(0x264)]=function(_0x3e2204){var _0x2ebe19=_0x56a42e,_0x38d208=_0x3e2204[_0x2ebe19(0x20b)];_0x38d208[_0x2ebe19(0x1ee)]=_0x2ebe19(0x211);var _0x1124a9={'nombreUsuario':document[_0x2ebe19(0x29c)](_0x2ebe19(0x242))[_0x2ebe19(0x275)],'marcaModelo':document[_0x2ebe19(0x29c)](_0x2ebe19(0x256))[_0x2ebe19(0x275)],'matricula':document[_0x2ebe19(0x29c)](_0x2ebe19(0x1de))[_0x2ebe19(0x275)],'precios':{'hogarValle':parseFloat(document[_0x2ebe19(0x29c)](_0x2ebe19(0x26d))[_0x2ebe19(0x275)]),'uteLenta':parseFloat(document[_0x2ebe19(0x29c)](_0x2ebe19(0x1f3))[_0x2ebe19(0x275)]),'uteRapida':parseFloat(document[_0x2ebe19(0x29c)](_0x2ebe19(0x28b))[_0x2ebe19(0x275)]),'wallboxEspecial':parseFloat(document[_0x2ebe19(0x29c)](_0x2ebe19(0x20e))[_0x2ebe19(0x275)])},'combustibles':{'Super\x2095':parseFloat(document[_0x2ebe19(0x29c)](_0x2ebe19(0x231))[_0x2ebe19(0x275)]),'Premium\x2097':parseFloat(document[_0x2ebe19(0x29c)](_0x2ebe19(0x1cf))[_0x2ebe19(0x275)]),'Gasoil\x2010S':parseFloat(document[_0x2ebe19(0x29c)](_0x2ebe19(0x27e))[_0x2ebe19(0x275)]),'Gasoil\x2050-S':parseFloat(document[_0x2ebe19(0x29c)](_0x2ebe19(0x27f))[_0x2ebe19(0x275)])},'nombreTaller':document[_0x2ebe19(0x29c)](_0x2ebe19(0x247))[_0x2ebe19(0x275)],'direccionTaller':document[_0x2ebe19(0x29c)](_0x2ebe19(0x253))[_0x2ebe19(0x275)],'telefonoTaller':document[_0x2ebe19(0x29c)](_0x2ebe19(0x209))[_0x2ebe19(0x275)],'combustibleComparativo':document[_0x2ebe19(0x29c)](_0x2ebe19(0x272))[_0x2ebe19(0x275)]},_0x37a475={};_0x37a475[_0x2ebe19(0x1e8)]=!![],_0x249fbb(_0x54eac9(_0x4061a0,_0x2ebe19(0x27c),user[_0x2ebe19(0x1fa)],_0x2ebe19(0x1d9),_0x2ebe19(0x22f)),_0x1124a9,_0x37a475)[_0x2ebe19(0x296)](function(){var _0xab88a5=_0x2ebe19;_0x38d208[_0xab88a5(0x1ee)]=_0xab88a5(0x2a2),setTimeout(function(){var _0x3ae34d=_0xab88a5;_0x3ae34d(0x1ed)!==_0x3ae34d(0x25b)?(window[_0x3ae34d(0x28f)](),_0x38d208[_0x3ae34d(0x1ee)]=_0x3ae34d(0x292)):_0x55bfa3[_0x55c4e8]=_0x2040ea[_0x2bb65a];},0x3e8);});};function _0x7549cc(){var _0x45394a=_0x56a42e,_0x92495b=historialCargas[0x0]?historialCargas[0x0]['km']:0x0,_0x4c4152=Math[_0x45394a(0x24d)]((_0x92495b+0x1)/0x2710)*0x2710,_0x3ecea8=_0x4c4152-_0x92495b,_0x103110=0x0;for(var _0x35af94=0x0;_0x35af94<historialCargas[_0x45394a(0x284)];_0x35af94++){if(historialCargas[_0x35af94][_0x45394a(0x22b)])break;_0x103110++;}var _0x44b634=document[_0x45394a(0x29c)](_0x45394a(0x267));_0x44b634[_0x45394a(0x222)]=_0x45394a(0x21e)+(_0x103110>=0x4?_0x45394a(0x221):_0x45394a(0x210))+_0x45394a(0x23c)+(_0x103110>=0x4?_0x45394a(0x290):_0x45394a(0x27d))+_0x45394a(0x27b);var _0x31f8f8=0x0;if(historialCargas[_0x45394a(0x284)]>0x1){if(_0x45394a(0x234)===_0x45394a(0x234)){var _0x4c38c4=historialCargas[_0x45394a(0x28a)]()[_0x45394a(0x1f8)](function(_0x5502b4,_0x2f10ae){var _0x202224=_0x45394a;if(_0x202224(0x1d4)===_0x202224(0x295))_0x421c01=_0x3ff2eb[_0x202224(0x1e4)][_0x202224(0x28c)](',')[0x1],_0x1bfdd6[_0x202224(0x29c)](_0x202224(0x23f))[_0x202224(0x1f1)]=_0x1d0c73[_0x202224(0x1e4)],_0x4df125[_0x202224(0x29c)](_0x202224(0x1e9))[_0x202224(0x233)][_0x202224(0x215)](_0x202224(0x28e));else return _0x5502b4['km']-_0x2f10ae['km'];}),_0xa363fd=estadoAuto[_0x45394a(0x288)][estadoAuto[_0x45394a(0x1d1)]];for(var _0x4bc14d=0x1;_0x4bc14d<_0x4c38c4[_0x45394a(0x284)];_0x4bc14d++){if(_0x45394a(0x25c)!==_0x45394a(0x25c)){var _0x5bfb79=_0x240d03[_0x45394a(0x28a)]()[_0x45394a(0x1f8)](function(_0x4e6148,_0x141558){return _0x4e6148['km']-_0x141558['km'];}),_0xacef80=_0x3b78e4[_0x45394a(0x288)][_0x46b053[_0x45394a(0x1d1)]];for(var _0xe728a2=0x1;_0xe728a2<_0x5bfb79[_0x45394a(0x284)];_0xe728a2++){var _0x2d4425=_0x5bfb79[_0xe728a2]['km']-_0x5bfb79[_0xe728a2-0x1]['km'];if(_0x2d4425>0x0){var _0x3ac969=_0x2d4425/_0x420137[_0x45394a(0x24c)]*_0xacef80;_0x4a8112+=_0x3ac969-_0x5bfb79[_0xe728a2][_0x45394a(0x259)];}}}else{var _0x4aef25=_0x4c38c4[_0x4bc14d]['km']-_0x4c38c4[_0x4bc14d-0x1]['km'];if(_0x4aef25>0x0){if(_0x45394a(0x1ce)===_0x45394a(0x1ce)){var _0x4dba05=_0x4aef25/estadoAuto[_0x45394a(0x24c)]*_0xa363fd;_0x31f8f8+=_0x4dba05-_0x4c38c4[_0x4bc14d][_0x45394a(0x259)];}else{var _0x32c4c6=_0x3cfeee[_0x45394a(0x24b)]();for(var _0x5dca58 in _0x32c4c6){_0x3e5375[_0x5dca58]=_0x32c4c6[_0x5dca58];}_0x1fa570();}}}}}else return![];}var _0x559002={};_0x559002[_0x45394a(0x27a)]=0x0,document[_0x45394a(0x29c)](_0x45394a(0x236))[_0x45394a(0x1ee)]='$\x20'+_0x31f8f8[_0x45394a(0x239)](_0x45394a(0x286),_0x559002),document[_0x45394a(0x29c)](_0x45394a(0x255))[_0x45394a(0x1ee)]=estadoAuto[_0x45394a(0x206)]||_0x45394a(0x208);var _0x3b482d=document[_0x45394a(0x29c)](_0x45394a(0x24a));_0x3b482d[_0x45394a(0x222)]=historialCargas[_0x45394a(0x28a)](0x0,0x5)[_0x45394a(0x249)](function(_0x16379d){var _0xd42b36=_0x45394a;return _0xd42b36(0x245)+_0x16379d['km'][_0xd42b36(0x239)]()+_0xd42b36(0x21a)+_0x16379d[_0xd42b36(0x259)][_0xd42b36(0x1ec)](0x0)+_0xd42b36(0x27b);})[_0x45394a(0x228)]('');}}window[_0x517cf5(0x207)]=function(){var _0xdd9e1b=_0x517cf5,_0x58dc9f=document[_0xdd9e1b(0x29c)](_0xdd9e1b(0x25e))[_0xdd9e1b(0x29f)][0x0],_0x2aa0af=new FileReader();_0x2aa0af[_0xdd9e1b(0x1e5)]=function(){var _0x4b1a4d=_0xdd9e1b;fotoBase64=_0x2aa0af[_0x4b1a4d(0x1e4)][_0x4b1a4d(0x28c)](',')[0x1],document[_0x4b1a4d(0x29c)](_0x4b1a4d(0x23f))[_0x4b1a4d(0x1f1)]=_0x2aa0af[_0x4b1a4d(0x1e4)],document[_0x4b1a4d(0x29c)](_0x4b1a4d(0x1e9))[_0x4b1a4d(0x233)][_0x4b1a4d(0x215)](_0x4b1a4d(0x28e));};if(_0x58dc9f)_0x2aa0af[_0xdd9e1b(0x268)](_0x58dc9f);},window[_0x517cf5(0x280)]=function(){var _0x3108a0=_0x517cf5;fotoBase64=null,document[_0x3108a0(0x29c)](_0x3108a0(0x1e9))[_0x3108a0(0x233)][_0x3108a0(0x1fc)](_0x3108a0(0x28e));},window[_0x517cf5(0x28f)]=function(){var _0x5e9693=_0x517cf5;document[_0x5e9693(0x29c)](_0x5e9693(0x29d))[_0x5e9693(0x233)][_0x5e9693(0x282)](_0x5e9693(0x28e));},window[_0x517cf5(0x1ea)]=function(){var _0x386e0a=_0x517cf5;alert(_0x386e0a(0x23e));};
+// --- CONFIGURACIÓN ---
+const firebaseConfig = {
+    apiKey: "AIzaSyA11UK2o8-EgE9vTTcw-eeA55yC-n9eZIg",
+    authDomain: "app-autos-electricos-5a311.firebaseapp.com",
+    projectId: "app-autos-electricos-5a311",
+    storageBucket: "app-autos-electricos-5a311.firebasestorage.app",
+    messagingSenderId: "877759630392",
+    appId: "1:877759630392:web:eed9d7b0f1a99fd91c2acd"
+};
 
-iniciarTodo(initializeApp, initializeAppCheck, ReCaptchaV3Provider, getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, deleteDoc, orderBy, GoogleGenerativeAI);
+const GEMINI_KEY = "AIzaSyDjz1zkuKIMw31cD4Clti6Cb2derh-lug0";
+const RECAPTCHA_SITE_KEY = "6LdE3OosAAAAALzMd8EpS2gkNU6JfG5KmZNv35E5";
+
+// --- INICIALIZACIÓN ---
+const app = initializeApp(firebaseConfig);
+const appCheck = initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),
+    isTokenAutoRefreshEnabled: true
+});
+
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+const genAI = new GoogleGenerativeAI(GEMINI_KEY);
+const model = genAI.getGenerativeModel({ 
+    model: "gemini-1.5-flash",
+    systemInstruction: "Eres el asistente experto de ASYS AUTO. Ayuda a dueños de autos electricos."
+});
+
+let user = null;
+let historialCargas = [];
+let fotoBase64 = null;
+let estadoAuto = { 
+    combustibleComparativo: "Super 95",
+    nombreUsuario: "", marcaModelo: "", matricula: "",
+    capacidadBateria: 54.3, rendimientoAnterior: 12,
+    nombreTaller: "", direccionTaller: "", telefonoTaller: "",
+    precios: { hogarValle: 2.32, uteLenta: 7.54, uteRapida: 10.80, wallboxEspecial: 12.00 },
+    combustibles: { "Super 95": 88.03, "Premium 97": 90.09, "Gasoil 10S": 66.27, "Gasoil 50-S": 57.72 }
+};
+
+// --- SESIÓN ---
+onAuthStateChanged(auth, (u) => {
+    const loginScreen = document.getElementById('login-screen');
+    const mainApp = document.getElementById('main-app');
+    if (u) {
+        user = u;
+        loginScreen.classList.add('hidden');
+        mainApp.classList.remove('hidden');
+        onSnapshot(query(collection(db, 'users', user.uid, 'cargas'), orderBy('fecha', 'desc')), (snap) => {
+            historialCargas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderizarApp();
+        });
+        onSnapshot(doc(db, 'users', user.uid, 'config', 'general'), (snap) => {
+            if (snap.exists()) { estadoAuto = { ...estadoAuto, ...snap.data() }; renderizarApp(); }
+        });
+    } else {
+        user = null;
+        loginScreen.classList.remove('hidden');
+        mainApp.classList.add('hidden');
+    }
+});
+
+window.loginGoogle = async () => { try { await signInWithPopup(auth, provider); } catch (e) { console.error(e); } };
+window.logout = () => { if(confirm("¿Cerrar sesión?")) signOut(auth); };
+
+// --- CARGAS ---
+window.actualizarPreview = () => {
+    const batIn = parseFloat(document.getElementById('bat-inicio').value);
+    const batFin = parseFloat(document.getElementById('bat-fin').value);
+    const tarifa = document.getElementById('tipo-tarifa').value;
+    const preview = document.getElementById('preview-costo');
+    if (!isNaN(batIn) && !isNaN(batFin) && tarifa) {
+        const kwh = ((batFin - batIn) / 100) * estadoAuto.capacidadBateria;
+        const p = estadoAuto.precios;
+        let costo = 0;
+        if (tarifa === 'uteRapida') costo = (kwh * p.uteRapida) + 121.9;
+        else if (tarifa === 'uteLenta') costo = (kwh * p.uteLenta) + 40;
+        else if (tarifa === 'hogarValle') costo = (kwh * p.hogarValle * 1.22) + 122;
+        else costo = (kwh * p.wallboxEspecial * 1.22);
+        preview.innerHTML = `<b>${kwh.toFixed(1)} kWh</b> | <b>$${costo.toFixed(0)}</b>`;
+    }
+};
+
+window.registrarCarga = async (e) => {
+    e.preventDefault();
+    const km = parseFloat(document.getElementById('km').value);
+    const batIn = parseFloat(document.getElementById('bat-inicio').value);
+    const batFin = parseFloat(document.getElementById('bat-fin').value);
+    const tarifa = document.getElementById('tipo-tarifa').value;
+    const esCien = document.getElementById('es-cien').checked;
+    const kwhTotales = ((batFin - batIn) / 100) * estadoAuto.capacidadBateria;
+    const p = estadoAuto.precios;
+    let costo = 0;
+    if (tarifa === 'uteRapida') costo = (kwhTotales * p.uteRapida) + 121.9;
+    else if (tarifa === 'uteLenta') costo = (kwhTotales * p.uteLenta) + 40;
+    else if (tarifa === 'hogarValle') costo = (kwhTotales * p.hogarValle * 1.22) + 122;
+    else costo = (kwhTotales * p.wallboxEspecial * 1.22);
+
+    await addDoc(collection(db, 'users', user.uid, 'cargas'), { fecha: Date.now(), km, batIn, batFin, kwhTotales, costo, tarifaLabel: tarifa, esCien });
+    e.target.reset();
+    document.getElementById('preview-costo').innerText = "REGISTRADO ✅";
+};
+
+// --- IA ---
+window.previsualizarFoto = () => {
+    const file = document.getElementById('input-foto').files[0];
+    const reader = new FileReader();
+    reader.onloadend = () => {
+        fotoBase64 = reader.result.split(',')[1];
+        document.getElementById('img-preview').src = reader.result;
+        document.getElementById('container-preview').classList.remove('hidden');
+    };
+    if (file) reader.readAsDataURL(file);
+};
+
+window.quitarFoto = () => {
+    fotoBase64 = null;
+    document.getElementById('container-preview').classList.add('hidden');
+};
+
+window.preguntarIA = async () => {
+    const prompt = document.getElementById('input-busqueda').value;
+    const sugerencias = document.getElementById('sugerencias-manual');
+    if (!prompt && !fotoBase64) return;
+    sugerencias.innerHTML = "Analizando...";
+    try {
+        let partes = [prompt || "Analiza esta imagen."];
+        if (fotoBase64) partes.push({ inlineData: { data: fotoBase64, mimeType: "image/jpeg" } });
+        const result = await model.generateContent(partes);
+        const response = await result.response;
+        sugerencias.innerHTML = `<div class="bg-blue-600/10 p-5 rounded-3xl border border-blue-500/20 text-zinc-200 text-sm">${response.text()}</div>`;
+        window.quitarFoto();
+        document.getElementById('input-busqueda').value = "";
+    } catch (e) { sugerencias.innerHTML = "Error de IA"; }
+};
+
+// --- CONFIG ---
+window.toggleConfig = () => document.getElementById('modal-config').classList.toggle('hidden');
+
+window.guardarConfig = async (e) => {
+    const btn = e.target;
+    btn.innerText = "GUARDANDO...";
+    const data = {
+        nombreUsuario: document.getElementById('conf-nombre').value,
+        marcaModelo: document.getElementById('conf-modelo').value,
+        matricula: document.getElementById('conf-matricula').value,
+        precios: {
+            hogarValle: parseFloat(document.getElementById('p-hogar').value),
+            uteLenta: parseFloat(document.getElementById('p-ute-l').value),
+            uteRapida: parseFloat(document.getElementById('p-ute-r').value),
+            wallboxEspecial: parseFloat(document.getElementById('p-wallbox').value)
+        },
+        combustibles: {
+            "Super 95": parseFloat(document.getElementById('p-super').value),
+            "Premium 97": parseFloat(document.getElementById('p-premium').value),
+            "Gasoil 10S": parseFloat(document.getElementById('p-gasoil10').value),
+            "Gasoil 50-S": parseFloat(document.getElementById('p-gasoil50').value)
+        },
+        nombreTaller: document.getElementById('conf-taller').value,
+        direccionTaller: document.getElementById('conf-taller-dir').value,
+        telefonoTaller: document.getElementById('conf-taller-tel').value,
+        combustibleComparativo: document.getElementById('conf-tipo-nafta').value
+    };
+    await setDoc(doc(db, 'users', user.uid, 'config', 'general'), data, { merge: true });
+    btn.innerText = "LISTO! ✅";
+    setTimeout(() => { toggleConfig(); btn.innerText = "Guardar Configuración"; }, 1000);
+};
+
+function renderizarApp() {
+    const kmActual = historialCargas[0]?.km || 0;
+    let cargasSinCien = 0;
+    for (let c of historialCargas) { if (c.esCien) break; cargasSinCien++; }
+    
+    document.getElementById('card-bateria').innerHTML = `<div class="bg-zinc-900 border ${cargasSinCien >= 4 ? 'border-purple-500' : 'border-zinc-800'} p-6 rounded-[2.5rem] text-center mb-6"><p class="text-2xl font-black uppercase">${cargasSinCien >= 4 ? 'CARGAR AL 100% HOY!' : 'TOCA CARGA AL 80%'}</p></div>`;
+
+    let ahorroTotal = 0;
+    if (historialCargas.length > 1) {
+        const ordenadas = [...historialCargas].sort((a,b) => a.km - b.km);
+        const precioNafta = estadoAuto.combustibles[estadoAuto.combustibleComparativo];
+        for(let i=1; i < ordenadas.length; i++){
+            const dist = ordenadas[i].km - ordenadas[i-1].km;
+            if (dist > 0) {
+                const costoNafta = (dist / estadoAuto.rendimientoAnterior) * precioNafta;
+                ahorroTotal += (costoNafta - ordenadas[i].costo);
+            }
+        }
+    }
+
+    document.getElementById('ahorro-valor').innerText = `$ ${ahorroTotal.toLocaleString('es-UY', {maximumFractionDigits:0})}`;
+    document.getElementById('user-display-name').innerText = estadoAuto.nombreUsuario || user.displayName || "Usuario";
+    
+    const lista = document.getElementById('lista-cargas');
+    lista.innerHTML = historialCargas.slice(0, 5).map(c => `<div class="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800 mb-2 flex justify-between items-center"><div><p class="font-bold text-zinc-200">${c.km.toLocaleString()} km</p><p class="text-[10px] text-zinc-600 uppercase">${new Date(c.fecha).toLocaleDateString()}</p></div><p class="text-green-500 font-bold">$${c.costo.toFixed(0)}</p></div>`).join('');
+    lucide.createIcons();
+}
+
+window.cambiarCombustible = async (t) => { await setDoc(doc(db, 'users', user.uid, 'config', 'general'), { combustibleComparativo: t }, { merge: true }); };
+window.eliminarRegistro = async (id) => { if(confirm("¿Eliminar?")) await deleteDoc(doc(db, 'users', user.uid, 'cargas', id)); };
+window.exportarExcel = () => {
+    let csv = "Fecha,KM,Costo\n";
+    historialCargas.forEach(c => { csv += `${new Date(c.fecha).toLocaleDateString()},${c.km},${c.costo}\n`; });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "bitacora.csv";
+    link.click();
+};
+
+window.registrarCargaForm = registrarCarga;
+window.onload = () => { lucide.createIcons(); };
