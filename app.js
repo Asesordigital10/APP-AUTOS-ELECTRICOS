@@ -1,80 +1,93 @@
-// Asegúrate de añadir 'getDocs', 'where' y 'query' en tus importaciones de firestore al principio del archivo:
-// import { ..., getDocs, where, query } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app-check.js";
+import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, deleteDoc, orderBy, getDocs, where } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
-window.preguntarIA = async () => {
-    const prompt = document.getElementById('input-busqueda').value;
-    const sugerencias = document.getElementById('sugerencias-manual');
-    const modeloUsuario = estadoAuto.marcaModelo || "Auto Eléctrico";
-    
-    if (!prompt && !fotoBase64) return;
+const firebaseConfig = {
+    apiKey: "AIzaSyA11UK2o8-EgE9vTTcw-eeA55yC-n9eZIg",
+    authDomain: "app-autos-electricos-5a311.firebaseapp.com",
+    projectId: "app-autos-electricos-5a311",
+    storageBucket: "app-autos-electricos-5a311.firebasestorage.app",
+    messagingSenderId: "877759630392",
+    appId: "1:877759630392:web:eed9d7b0f1a99fd91c2acd"
+};
 
-    sugerencias.innerHTML = "<p class='text-blue-500 animate-pulse text-[10px] font-black uppercase tracking-widest'>Consultando Manuales y Wiki...</p>";
+const GEMINI_KEY = "AIzaSyDjz1zkuKIMw31cD4Clti6Cb2derh-lug0";
+const RECAPTCHA_SITE_KEY = "6LdE3OosAAAAALzMd8EpS2gkNU6JfG5KmZNv35E5";
 
+// --- INICIALIZACIÓN ---
+const app = initializeApp(firebaseConfig);
+
+// App Check (Solo informativo, no bloqueante si lo desactivaste en la consola)
+try {
+    initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),
+        isTokenAutoRefreshEnabled: true
+    });
+} catch (e) { console.log("AppCheck inicializado"); }
+
+const auth = getAuth(app);
+const db = getFirestore(app);
+setPersistence(auth, browserLocalPersistence);
+
+const provider = new GoogleAuthProvider();
+const genAI = new GoogleGenerativeAI(GEMINI_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+// --- FUNCIONES DE LOGIN (DISPONIBLES PARA EL HTML) ---
+window.loginGoogle = async () => {
     try {
-        // 1. BUSCAR TODA LA INFO DEL MODELO EN FIREBASE (Segmentada)
-        const conocimientoRef = collection(db, 'conocimiento_autos');
-        // Filtramos para traer solo lo que pertenece al modelo del usuario
-        const qManual = query(conocimientoRef, where("modelo", "==", modeloUsuario));
-        const snapManual = await getDocs(qManual);
-        
-        let manualContexto = "INFORMACIÓN TÉCNICA DEL MANUAL:\n";
-        snapManual.forEach(doc => {
-            const d = doc.data();
-            manualContexto += `[Categoría: ${d.categoria}]: ${d.contenido}\n`;
-        });
-
-        // 2. BUSCAR TIPS DE LA COMUNIDAD (Wiki)
-        const wikiRef = collection(db, 'wiki_comunidad');
-        const qWiki = query(wikiRef, where("modelo", "==", modeloUsuario));
-        const snapWiki = await getDocs(qWiki);
-        
-        let wikiContexto = "DESCUBRIMIENTOS DE LA COMUNIDAD (WIKI):\n";
-        snapWiki.forEach(doc => {
-            wikiContexto += `- ${doc.data().contenido}\n`;
-        });
-
-        // 3. CONSTRUIR EL PROMPT MAESTRO PARA GEMINI
-        const instruccionesIA = `
-            Eres el Asistente Experto de ASYS AUTO para el modelo ${modeloUsuario}.
-            
-            Usa exclusivamente esta base de conocimientos para responder de forma precisa. 
-            Si la información no está aquí, usa tu conocimiento general pero advierte que es una sugerencia general.
-            
-            ${manualContexto}
-            
-            ${wikiContexto}
-            
-            Pregunta del usuario: ${prompt}
-        `;
-
-        let partes = [instruccionesIA];
-        if (fotoBase64) {
-            partes.push({ inlineData: { data: fotoBase64, mimeType: "image/jpeg" } });
-        }
-
-        // 4. LLAMADA A GEMINI
-        const result = await model.generateContent(partes);
-        const response = await result.response;
-        const text = response.text();
-
-        // 5. RENDERIZAR RESPUESTA
-        sugerencias.innerHTML = `
-            <div class="bg-blue-600/10 p-5 rounded-[2rem] border border-blue-500/20 mb-4 shadow-inner">
-                <p class="text-[9px] text-blue-500 font-black mb-2 uppercase italic tracking-widest">Respuesta de ASYS Intelligence</p>
-                <div class="text-zinc-200 text-sm leading-relaxed">${text.replace(/\n/g, '<br>')}</div>
-            </div>
-            <div class="flex flex-col gap-2">
-                <button onclick="window.abrirFormWiki()" class="text-[8px] text-zinc-600 uppercase font-black ml-2 hover:text-blue-400 transition-colors">
-                    ¿Descubriste algo nuevo en la pantalla? Súbelo a la Wiki
-                </button>
-            </div>
-        `;
-        
-        window.quitarFoto();
-        document.getElementById('input-busqueda').value = "";
-
-    } catch (error) {
-        console.error(error);
-        sugerencias.innerHTML = "<p class='text-red-500 text-[10px] font-bold uppercase'>Error al conectar con la base de conocimientos.</p>";
+        await signInWithPopup(auth, provider);
+    } catch (e) {
+        console.error("Error de Login:", e);
+        alert("No se pudo iniciar sesión. Revisa la consola (F12).");
     }
 };
+
+window.logout = () => signOut(auth).then(() => location.reload());
+
+// --- GESTIÓN DE ESTADO ---
+let user = null;
+let historialCargas = [];
+let estadoAuto = { 
+    tipoUso: "particular", combustibleComparativo: "Super 95",
+    nombreUsuario: "", marcaModelo: "", matricula: "",
+    capacidadBateria: 54.3, rendimientoAnterior: 12,
+    nombreTaller: "", direccionTaller: "", telefonoTaller: "",
+    precios: { hogarValle: 2.32, uteLenta: 7.54, uteRapida: 10.80, wallboxEspecial: 12.00 },
+    combustibles: { "Super 95": 88.03, "Premium 97": 90.09, "Gasoil 10S": 66.27, "Gasoil 50-S": 57.72 }
+};
+
+onAuthStateChanged(auth, (u) => {
+    const loginScreen = document.getElementById('login-screen');
+    const mainApp = document.getElementById('main-app');
+    if (u) {
+        user = u;
+        loginScreen.classList.add('hidden');
+        mainApp.classList.remove('hidden');
+        
+        onSnapshot(query(collection(db, 'users', user.uid, 'cargas'), orderBy('fecha', 'desc')), (snap) => {
+            historialCargas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderizarApp();
+        });
+
+        onSnapshot(doc(db, 'users', user.uid, 'config', 'general'), (snap) => {
+            if (snap.exists()) {
+                const data = snap.data();
+                estadoAuto = { ...estadoAuto, ...data };
+                if (data.precios) estadoAuto.precios = { ...estadoAuto.precios, ...data.precios };
+                if (data.combustibles) estadoAuto.combustibles = { ...estadoAuto.combustibles, ...data.combustibles };
+                renderizarApp();
+            }
+        });
+    } else {
+        user = null;
+        loginScreen.classList.remove('hidden');
+        mainApp.classList.add('hidden');
+    }
+});
+
+// --- EL RESTO DE TUS FUNCIONES (Cargas, IA, Config) ---
+// (Pega aquí debajo el resto de funciones que ya teníamos: registrarCarga, preguntarIA, toggleConfig, guardarConfig, renderizarApp, etc.)
+// Asegúrate de usar los nombres exactos: window.registrarCarga, window.preguntarIA, etc.
