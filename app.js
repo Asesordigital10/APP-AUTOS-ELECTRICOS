@@ -2,8 +2,9 @@ import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app-check.js";
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, deleteDoc, orderBy } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, deleteDoc, orderBy, getDocs, where } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
+// --- 1. CONFIGURACIÓN ---
 const firebaseConfig = {
     apiKey: "AIzaSyA11UK2o8-EgE9vTTcw-eeA55yC-n9eZIg",
     authDomain: "app-autos-electricos-5a311.firebaseapp.com",
@@ -16,6 +17,7 @@ const firebaseConfig = {
 const GEMINI_KEY = "AIzaSyDjz1zkuKIMw31cD4Clti6Cb2derh-lug0";
 const RECAPTCHA_SITE_KEY = "6LdE3OosAAAAALzMd8EpS2gkNU6JfG5KmZNv35E5";
 
+// --- 2. INICIALIZACIÓN ---
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -26,11 +28,14 @@ try {
         provider: new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),
         isTokenAutoRefreshEnabled: true
     });
-} catch (e) {}
+} catch (e) { console.log("AppCheck activo"); }
 
 const provider = new GoogleAuthProvider();
 const genAI = new GoogleGenerativeAI(GEMINI_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ 
+    model: "gemini-1.5-flash",
+    systemInstruction: "Eres el experto técnico de ASYS AUTO. Ayuda a dueños de autos eléctricos con manuales y funciones de pantalla."
+});
 
 let user = null;
 let historialCargas = [];
@@ -44,7 +49,7 @@ let estadoAuto = {
     combustibles: { "Super 95": 88.03, "Premium 97": 90.09, "Gasoil 10S": 66.27, "Gasoil 50-S": 57.72 }
 };
 
-// --- SESIÓN ---
+// --- 3. GESTIÓN DE DATOS Y SESIÓN ---
 onAuthStateChanged(auth, (u) => {
     const loginScreen = document.getElementById('login-screen');
     const mainApp = document.getElementById('main-app');
@@ -52,10 +57,12 @@ onAuthStateChanged(auth, (u) => {
         user = u;
         if(loginScreen) loginScreen.classList.add('hidden');
         if(mainApp) mainApp.classList.remove('hidden');
+        
         onSnapshot(query(collection(db, 'users', user.uid, 'cargas'), orderBy('fecha', 'desc')), (snap) => {
             historialCargas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             renderizarApp();
         });
+
         onSnapshot(doc(db, 'users', user.uid, 'config', 'general'), (snap) => {
             if (snap.exists()) {
                 const data = snap.data();
@@ -72,7 +79,7 @@ onAuthStateChanged(auth, (u) => {
     }
 });
 
-// --- LÓGICA ---
+// --- 4. LÓGICA DE CARGA Y COSTOS ---
 const calcularCostoReal = (kwh, tarifa) => {
     const p = estadoAuto.precios;
     const k = parseFloat(kwh) || 0;
@@ -83,6 +90,82 @@ const calcularCostoReal = (kwh, tarifa) => {
     return (k * p.wallboxEspecial * 1.22);
 };
 
+window.actualizarPreview = () => {
+    let inicio = parseFloat(document.getElementById('bat-inicio')?.value);
+    let fin = parseFloat(document.getElementById('bat-fin')?.value);
+    const tarifa = document.getElementById('tipo-tarifa')?.value;
+    const preview = document.getElementById('preview-costo');
+
+    if (inicio < 0) inicio = 0; if (inicio > 100) inicio = 100;
+    if (fin < 0) fin = 0; if (fin > 100) fin = 100;
+
+    if (!isNaN(inicio) && !isNaN(fin) && tarifa && preview) {
+        if (fin <= inicio) {
+            preview.innerHTML = `<span class="text-orange-500 font-bold uppercase text-[10px]">El % final debe ser mayor</span>`;
+            return;
+        }
+        const kwh = ((fin - inicio) / 100) * (estadoAuto.capacidadBateria || 54.3);
+        const costo = calcularCostoReal(kwh, tarifa);
+        preview.innerHTML = `<b>${kwh.toFixed(1)} kWh</b> | <b>$${costo.toFixed(0)}</b>`;
+    }
+};
+
+window.registrarCarga = async (e) => {
+    e.preventDefault();
+    const km = parseFloat(document.getElementById('km').value) || 0;
+    const inicio = parseFloat(document.getElementById('bat-inicio').value) || 0;
+    const fin = parseFloat(document.getElementById('bat-fin').value) || 0;
+    const tarifa = document.getElementById('tipo-tarifa').value;
+    const esCien = document.getElementById('es-cien').checked;
+
+    // VALIDACIONES
+    if (fin <= inicio) return alert("Error: El porcentaje final debe ser mayor al inicial.");
+    
+    const kmAnterior = historialCargas[0]?.km || 0;
+    if (historialCargas.length > 0) {
+        if (km <= kmAnterior) return alert("Error: El kilometraje debe ser mayor al anterior (" + kmAnterior + " km).");
+        const dif = km - kmAnterior;
+        if (dif > 400) return alert("Error: " + dif + " km excede la autonomía lógica. Revisa el kilometraje.");
+    }
+
+    const kwh = ((fin - inicio) / 100) * (estadoAuto.capacidadBateria || 54.3);
+    const costo = calcularCostoReal(kwh, tarifa);
+
+    await addDoc(collection(db, 'users', user.uid, 'cargas'), {
+        fecha: Date.now(), km, batIn: inicio, batFin: fin, kwhTotales: kwh, costo, tarifaLabel: tarifa, esCien
+    });
+    e.target.reset();
+    document.getElementById('preview-costo').innerText = "ESPERANDO DATOS";
+};
+
+// --- 5. INTELIGENCIA ARTIFICIAL ---
+window.preguntarIA = async () => {
+    const prompt = document.getElementById('input-busqueda')?.value;
+    const sug = document.getElementById('sugerencias-manual');
+    if (!prompt && !fotoBase64) return;
+    if(sug) sug.innerHTML = "<p class='text-blue-500 animate-pulse text-[10px] font-black uppercase'>Consultando Cerebro Central...</p>";
+
+    try {
+        let manualContexto = "";
+        try {
+            const snap = await getDocs(query(collection(db, 'conocimiento_autos'), where("modelo", "==", estadoAuto.marcaModelo)));
+            snap.forEach(d => { manualContexto += d.data().contenido + "\n"; });
+        } catch (e) {}
+
+        const instrucciones = `Usa esta info técnica: ${manualContexto}. Pregunta: ${prompt}`;
+        let partes = [instrucciones];
+        if (fotoBase64) partes.push({ inlineData: { data: fotoBase64, mimeType: "image/jpeg" } });
+
+        const result = await model.generateContent(partes);
+        const text = result.response.text();
+
+        if(sug) sug.innerHTML = `<div class="bg-blue-600/10 p-5 rounded-3xl border border-blue-500/20 text-zinc-200 text-sm leading-relaxed">${text.replace(/\n/g, '<br>')}</div>`;
+        window.quitarFoto();
+        document.getElementById('input-busqueda').value = "";
+    } catch (err) { if(sug) sug.innerHTML = "Error de conexión con IA"; }
+};
+
+// --- 6. RENDERIZADO DE INTERFAZ ---
 function renderizarApp() {
     try {
         const nameEl = document.getElementById('user-display-name');
@@ -106,16 +189,21 @@ function renderizarApp() {
         let cargasSinCien = 0;
         for (let c of historialCargas) { if (c.esCien) break; cargasSinCien++; }
         const batEl = document.getElementById('card-bateria');
-        if(batEl) batEl.innerHTML = `<div class="bg-zinc-900 border ${cargasSinCien >= 4 ? 'border-purple-500' : 'border-zinc-800'} p-6 rounded-[2.5rem] text-center mb-6 shadow-xl"><p class="text-2xl font-black uppercase">${cargasSinCien >= 4 ? 'CARGAR AL 100% HOY!' : 'TOCA CARGA AL 80%'}</p></div>`;
+        if(batEl) batEl.innerHTML = `<div class="bg-zinc-900 border ${cargasSinCien >= 4 ? 'border-purple-500' : 'border-zinc-800'} p-6 rounded-[2.5rem] text-center mb-6 shadow-xl"><p class="text-[10px] text-zinc-500 uppercase font-black mb-2">BALANCEO LFP</p><p class="text-2xl font-black uppercase ${cargasSinCien >= 4 ? 'text-purple-400' : 'text-zinc-100'}">${cargasSinCien >= 4 ? 'CARGAR AL 100% HOY!' : 'TOCA CARGA AL 80%'}</p></div>`;
+
+        const kmActual = historialCargas[0]?.km || 0;
+        const faltanKm = (Math.ceil((kmActual + 1) / 10000) * 10000) - kmActual;
+        const mantEl = document.getElementById('card-mantenimiento');
+        if(mantEl) mantEl.innerHTML = `<div class="bg-zinc-900 border border-zinc-800 p-6 rounded-[2.5rem] shadow-xl"><div class="flex justify-between items-center mb-2"><div><p class="text-zinc-500 text-[10px] uppercase font-black">Service Oficial</p><p class="text-2xl font-black ${faltanKm < 1000 ? 'text-orange-500' : 'text-zinc-100'}">Faltan ${faltanKm.toLocaleString()} km</p></div>${estadoAuto.telefonoTaller ? `<button onclick="window.solicitarService()" class="bg-green-600 p-3 rounded-full text-white shadow-lg"><i data-lucide="message-circle"></i></button>` : ''}</div><p class="text-[9px] text-zinc-600 uppercase font-bold">${estadoAuto.nombreTaller || 'Taller no configurado'}</p></div>`;
 
         const listaEl = document.getElementById('lista-cargas');
-        if(listaEl) listaEl.innerHTML = historialCargas.slice(0, 5).map(c => `<div class="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800 mb-2 flex justify-between items-center"><div><p class="font-bold text-sm text-zinc-200">${c.km.toLocaleString()} km</p></div><div class="flex items-center gap-4"><p class="text-green-500 font-bold">$${(parseFloat(c.costo)||0).toFixed(0)}</p><button onclick="window.eliminarRegistro('${c.id}')" class="text-zinc-800"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`).join('');
+        if(listaEl) listaEl.innerHTML = historialCargas.slice(0, 5).map(c => `<div class="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800 mb-2 flex justify-between items-center"><div><p class="font-bold text-sm text-zinc-200">${c.km.toLocaleString()} km</p><p class="text-[10px] text-zinc-600 uppercase">${new Date(c.fecha).toLocaleDateString()}</p></div><div class="flex items-center gap-4"><p class="text-green-500 font-bold text-sm">$${(parseFloat(c.costo)||0).toFixed(0)}</p><button onclick="window.eliminarRegistro('${c.id}')" class="text-zinc-800"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`).join('');
         
         if(typeof lucide !== 'undefined') lucide.createIcons();
-    } catch (e) { console.log(e); }
+    } catch (e) { console.log("Error render:", e); }
 }
 
-// --- GLOBALES ---
+// --- 7. GLOBALES ---
 window.loginGoogle = async () => { try { await signInWithPopup(auth, provider); } catch (e) { console.error(e); } };
 window.logout = () => signOut(auth).then(() => location.reload());
 window.toggleConfig = () => {
@@ -123,24 +211,14 @@ window.toggleConfig = () => {
     if(!modal) return;
     modal.classList.toggle('hidden');
     if (!modal.classList.contains('hidden')) {
-        document.getElementById('conf-nombre').value = estadoAuto.nombreUsuario || "";
-        document.getElementById('conf-modelo').value = estadoAuto.marcaModelo || "";
-        document.getElementById('conf-matricula').value = estadoAuto.matricula || "";
-        document.getElementById('conf-tipo-uso').value = estadoAuto.tipoUso || "particular";
-        document.getElementById('conf-bat-cap').value = estadoAuto.capacidadBateria || 54.3;
-        document.getElementById('conf-rend-ant').value = estadoAuto.rendimientoAnterior || 12;
-        document.getElementById('p-hogar').value = estadoAuto.precios.hogarValle;
-        document.getElementById('p-ute-l').value = estadoAuto.precios.uteLenta;
-        document.getElementById('p-ute-r').value = estadoAuto.precios.uteRapida;
-        document.getElementById('p-wallbox').value = estadoAuto.precios.wallboxEspecial;
-        document.getElementById('p-super').value = estadoAuto.combustibles["Super 95"];
-        document.getElementById('p-premium').value = estadoAuto.combustibles["Premium 97"];
-        document.getElementById('p-gasoil10').value = estadoAuto.combustibles["Gasoil 10S"];
-        document.getElementById('p-gasoil50').value = estadoAuto.combustibles["Gasoil 50-S"];
-        document.getElementById('conf-taller').value = estadoAuto.nombreTaller || "";
-        document.getElementById('conf-taller-dir').value = estadoAuto.direccionTaller || "";
-        document.getElementById('conf-taller-tel').value = estadoAuto.telefonoTaller || "";
-        document.getElementById('conf-tipo-nafta').value = estadoAuto.combustibleComparativo || "Super 95";
+        const fields = {
+            'conf-nombre': estadoAuto.nombreUsuario, 'conf-modelo': estadoAuto.marcaModelo, 'conf-matricula': estadoAuto.matricula,
+            'conf-tipo-uso': estadoAuto.tipoUso, 'conf-bat-cap': estadoAuto.capacidadBateria, 'conf-rend-ant': estadoAuto.rendimientoAnterior,
+            'p-hogar': estadoAuto.precios.hogarValle, 'p-ute-l': estadoAuto.precios.uteLenta, 'p-ute-r': estadoAuto.precios.uteRapida, 'p-wallbox': estadoAuto.precios.wallboxEspecial,
+            'p-super': estadoAuto.combustibles["Super 95"], 'p-premium': estadoAuto.combustibles["Premium 97"], 'p-gasoil10': estadoAuto.combustibles["Gasoil 10S"], 'p-gasoil50': estadoAuto.combustibles["Gasoil 50-S"],
+            'conf-taller': estadoAuto.nombreTaller, 'conf-taller-dir': estadoAuto.direccionTaller, 'conf-taller-tel': estadoAuto.telefonoTaller, 'conf-tipo-nafta': estadoAuto.combustibleComparativo
+        };
+        for (let id in fields) { if(document.getElementById(id)) document.getElementById(id).value = fields[id] || ""; }
     }
 };
 
@@ -176,45 +254,6 @@ window.guardarConfig = async (e) => {
     setTimeout(() => { window.toggleConfig(); btn.innerText = "Guardar"; }, 1000);
 };
 
-window.actualizarPreview = () => {
-    const inicio = parseFloat(document.getElementById('bat-inicio')?.value);
-    const fin = parseFloat(document.getElementById('bat-fin')?.value);
-    const tarifa = document.getElementById('tipo-tarifa')?.value;
-    const preview = document.getElementById('preview-costo');
-    if (!isNaN(inicio) && !isNaN(fin) && tarifa && preview) {
-        const kwh = ((fin - inicio) / 100) * (estadoAuto.capacidadBateria || 54.3);
-        const costo = calcularCostoReal(kwh, tarifa);
-        preview.innerHTML = `<b>${kwh.toFixed(1)} kWh</b> | <b>$${costo.toFixed(0)}</b>`;
-    }
-};
-
-window.registrarCarga = async (e) => {
-    e.preventDefault();
-    const km = parseFloat(document.getElementById('km').value) || 0;
-    const inicio = parseFloat(document.getElementById('bat-inicio').value) || 0;
-    const fin = parseFloat(document.getElementById('bat-fin').value) || 0;
-    const tarifa = document.getElementById('tipo-tarifa').value;
-    const esCien = document.getElementById('es-cien').checked;
-    const kwh = ((fin - inicio) / 100) * (estadoAuto.capacidadBateria || 54.3);
-    const costo = calcularCostoReal(kwh, tarifa);
-    await addDoc(collection(db, 'users', user.uid, 'cargas'), { fecha: Date.now(), km, batIn: inicio, batFin: fin, kwhTotales: kwh, costo, tarifaLabel: tarifa, esCien });
-    e.target.reset();
-};
-
-window.preguntarIA = async () => {
-    const prompt = document.getElementById('input-busqueda').value;
-    const sug = document.getElementById('sugerencias-manual');
-    if (!prompt && !fotoBase64) return;
-    sug.innerHTML = "Analizando...";
-    try {
-        let partes = [prompt || "Analiza esta imagen."];
-        if (fotoBase64) partes.push({ inlineData: { data: fotoBase64, mimeType: "image/jpeg" } });
-        const result = await model.generateContent(partes);
-        sug.innerHTML = `<div class="bg-blue-600/10 p-5 rounded-3xl border border-blue-500/20 text-zinc-200 text-sm">${result.response.text()}</div>`;
-        window.quitarFoto();
-    } catch (e) { sug.innerHTML = "Error de IA"; }
-};
-
 window.previsualizarFoto = () => {
     const file = document.getElementById('input-foto').files[0];
     const reader = new FileReader();
@@ -226,13 +265,13 @@ window.previsualizarFoto = () => {
     if (file) reader.readAsDataURL(file);
 };
 
-window.quitarFoto = () => {
-    fotoBase64 = null;
-    document.getElementById('container-preview').classList.add('hidden');
-};
-
+window.quitarFoto = () => { fotoBase64 = null; document.getElementById('container-preview').classList.add('hidden'); };
 window.cambiarCombustible = async (t) => { await setDoc(doc(db, 'users', user.uid, 'config', 'general'), { combustibleComparativo: t }, { merge: true }); };
 window.eliminarRegistro = async (id) => { if(confirm("¿Eliminar?")) await deleteDoc(doc(db, 'users', user.uid, 'cargas', id)); };
+window.solicitarService = () => {
+    const msg = `Hola, soy ${estadoAuto.nombreUsuario}. Agendar service para ${estadoAuto.marcaModelo} (${estadoAuto.matricula}).`;
+    window.open(`https://wa.me/${estadoAuto.telefonoTaller}?text=${encodeURIComponent(msg)}`, "_blank");
+};
 window.exportarExcel = () => {
     let csv = "Fecha,KM,Costo\n";
     historialCargas.forEach(c => { csv += `${new Date(c.fecha).toLocaleDateString()},${c.km},${c.costo}\n`; });
