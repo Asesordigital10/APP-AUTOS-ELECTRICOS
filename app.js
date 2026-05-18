@@ -1,4 +1,3 @@
-```javascript
 import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app-check.js";
@@ -336,7 +335,4 @@ window.exportarExcel = () => {
 };
 
 window.onload = () => { if(typeof lucide !== 'undefined') lucide.createIcons(); };
-
-
-```
 
