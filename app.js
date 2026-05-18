@@ -34,9 +34,9 @@ try {
 const provider = new GoogleAuthProvider();
 const genAI = new GoogleGenerativeAI(GEMINI_KEY);
 
-// EL CAMBIO ESTÁ AQUÍ: Actualizado al modelo exacto de tu AI Studio
+// Regresamos al modelo 1.5 flash que es el más estable para la web pública
 const model = genAI.getGenerativeModel({ 
-    model: "gemini-3-flash-preview", 
+    model: "gemini-1.5-flash", 
     systemInstruction: "Eres el experto técnico de ASYS AUTO. Ayuda a dueños de autos eléctricos analizando manuales, fallos y funciones de pantalla."
 });
 
@@ -138,41 +138,54 @@ window.registrarCarga = async (e) => {
             fecha: Date.now(), km, batIn: inicio, batFin: fin, kwhTotales: kwh, costo, tarifaLabel: tarifa, esCien
         });
         e.target.reset();
-        document.getElementById('preview-costo').innerText = "ESPERANDO DATOS";
+        
+        // Aquí arreglamos el cartel para que vuelva a su estilo sutil original
+        document.getElementById('preview-costo').innerHTML = '<span class="text-[10px] uppercase text-zinc-500 font-bold tracking-widest">Esperando datos...</span>';
     } catch (err) { alert("Error al conectar con la base de datos."); }
 };
 
-// --- 6. ASISTENTE IA ---
+// --- 6. ASISTENTE IA (Con Rastreadores de Consola) ---
 window.preguntarIA = async () => {
     const prompt = document.getElementById('input-busqueda')?.value;
     const sug = document.getElementById('sugerencias-manual');
     if (!prompt && !fotoBase64) return;
     if(sug) sug.innerHTML = "<p class='text-blue-500 animate-pulse text-[10px] font-black uppercase'>Consultando Cerebro Central...</p>";
 
+    console.log("1. IA Iniciada. Pregunta del usuario:", prompt);
+
     try {
         let manualContexto = "";
         try {
-            const snap = await getDocs(query(collection(db, 'conocimiento_autos'), where("modelo", "==", estadoAuto.marcaModelo)));
+            console.log("2. Buscando manual en Firebase para el modelo:", estadoAuto.marcaModelo);
+            const snap = await getDocs(query(collection(db, 'conocimiento_autos'), where("modelo", "==", estadoAuto.marcaModelo || "")));
             snap.forEach(d => { manualContexto += d.data().contenido + "\n"; });
-        } catch (e) {}
+            console.log("3. Manual encontrado y cargado.");
+        } catch (e) {
+            console.error("❌ Error al buscar en Firebase:", e);
+        }
 
         const instrucciones = `Usa esta info técnica: ${manualContexto}. Pregunta: ${prompt}`;
         
-        // Estructura limpia y 100% compatible para evitar el error 400
-        let partes = [{ text: instrucciones }];
+        let partes = [instrucciones];
         if (fotoBase64) {
             partes.push({ inlineData: { data: fotoBase64, mimeType: "image/jpeg" } });
+            console.log("4. Foto detectada y adjuntada.");
         }
+
+        console.log("5. Enviando datos a Gemini...", partes);
 
         const result = await model.generateContent(partes);
         const text = result.response.text();
 
+        console.log("6. ¡Respuesta recibida con éxito!");
+
         if(sug) sug.innerHTML = `<div class="bg-blue-600/10 p-5 rounded-3xl border border-blue-500/20 text-zinc-200 text-sm leading-relaxed">${text.replace(/\n/g, '<br>')}</div>`;
         window.quitarFoto();
         if(document.getElementById('input-busqueda')) document.getElementById('input-busqueda').value = "";
+        
     } catch (err) { 
-        console.error("Error real de Gemini:", err); 
-        if(sug) sug.innerHTML = "Error de conexión con IA. Revisa la configuración."; 
+        console.error("❌ ERROR FATAL DE GEMINI:", err); 
+        if(sug) sug.innerHTML = "Error de conexión con IA. Revisa la consola (F12)."; 
     }
 };
 
