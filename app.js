@@ -36,8 +36,9 @@ try {
 const provider = new GoogleAuthProvider();
 const genAI = new GoogleGenerativeAI(GEMINI_KEY);
 
+// ¡AQUÍ ESTÁ LA SOLUCIÓN! Usamos el modelo 2.5 que tu cuenta sí soporta.
 const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash", 
+    model: "gemini-2.5-flash", 
     systemInstruction: "Eres el experto técnico exclusivo de ASYS AUTO. Tu ÚNICA fuente de verdad es la información que te paso en cada consulta. Si el usuario pregunta algo y no está en la información provista, NO inventes, responde amablemente que no tienes ese dato cargado en tu base de datos."
 });
 
@@ -142,7 +143,7 @@ window.registrarCarga = async (e) => {
     } catch (err) { alert("Error al conectar con la base de datos."); }
 };
 
-// --- 6. ASISTENTE IA (MODO ESTRICTO) ---
+// --- 6. ASISTENTE IA (MODO ESTRICTO Y MODELO CORREGIDO) ---
 window.preguntarIA = async () => {
     const prompt = document.getElementById('input-busqueda')?.value;
     const sug = document.getElementById('sugerencias-manual');
@@ -155,7 +156,6 @@ window.preguntarIA = async () => {
     try {
         let manualContexto = "";
         try {
-            // Buscamos exacto el texto
             const snap = await getDocs(query(collection(db, 'conocimiento_autos'), where("modelo", "==", estadoAuto.marcaModelo || "")));
             
             if (snap.empty) {
@@ -166,23 +166,21 @@ window.preguntarIA = async () => {
 
             snap.forEach(d => { 
                 const data = d.data();
-                // Revisamos si la info está en "contenido", "texto", "info" o "datos"
                 const textoEncontrado = data.contenido || data.texto || data.info || data.datos || "";
                 manualContexto += textoEncontrado + "\n"; 
             });
 
-            console.log("2. TEXTO DEL MANUAL EXTRAÍDO DE FIREBASE:\n", manualContexto ? manualContexto : "[EL TEXTO ESTÁ VACÍO O NO EXISTE EL CAMPO 'contenido']");
+            console.log("2. TEXTO DEL MANUAL EXTRAÍDO DE FIREBASE:\n", manualContexto ? manualContexto : "[EL TEXTO ESTÁ VACÍO O NO EXISTE EL CAMPO]");
 
         } catch (e) {
             console.error("❌ Error al buscar en Firebase:", e);
         }
 
-        // Si el manual está vacío, le advertimos a Gemini que no invente.
         if (manualContexto.trim() === "") {
             manualContexto = "[SISTEMA: NO TIENES INFORMACIÓN EN TU BASE DE DATOS PARA ESTE AUTO. INFORMA ESTO AL USUARIO Y NO INVENTES DATOS].";
         }
 
-        const instrucciones = `INFO TÉCNICA OBLIGATORIA (Si está vacía, no respondas la duda técnica):\n${manualContexto}\n\nPREGUNTA DEL USUARIO: ${prompt}`;
+        const instrucciones = `INFO TÉCNICA OBLIGATORIA:\n${manualContexto}\n\nPREGUNTA DEL USUARIO: ${prompt}`;
         
         let partes = [{ text: instrucciones }];
         if (fotoBase64) {
