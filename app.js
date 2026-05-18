@@ -4,7 +4,7 @@ import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, deleteDoc, orderBy, getDocs, where } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// --- 1. CONFIGURACIÓN DE FIREBASE (Usa la Clave Original Restringida) ---
+// --- 1. CONFIGURACIÓN DE FIREBASE ---
 const firebaseConfig = {
     apiKey: "AIzaSyA11UK2o8-EgE9vTTcw-eeA55yC-n9eZIg",
     authDomain: "app-autos-electricos-5a311.firebaseapp.com",
@@ -14,11 +14,9 @@ const firebaseConfig = {
     appId: "1:877759630392:web:eed9d7b0f1a99fd91c2acd"
 };
 
-// --- 2. CONFIGURACIÓN DE GEMINI (TRUCO ANTI-BLOQUEO GITHUB) ---
-// Clave dividida para que los robots de seguridad no la detecten
+// --- 2. CONFIGURACIÓN DE GEMINI ---
 const GEMINI_PARTE_1 = "AIzaSyBHTsmqMGxc2T"; 
 const GEMINI_PARTE_2 = "yG7sKIsu3mdScs1EmuQi8"; 
-
 const GEMINI_KEY = GEMINI_PARTE_1 + GEMINI_PARTE_2;
 const RECAPTCHA_SITE_KEY = "6LdE3OosAAAAALzMd8EpS2gkNU6JfG5KmZNv35E5";
 
@@ -38,10 +36,9 @@ try {
 const provider = new GoogleAuthProvider();
 const genAI = new GoogleGenerativeAI(GEMINI_KEY);
 
-// ¡AQUÍ ESTÁ LA CORRECCIÓN! Usamos el modelo 2.5-flash que sí existe en tu cuenta
 const model = genAI.getGenerativeModel({ 
-    model: "gemini-2.5-flash", 
-    systemInstruction: "Eres el experto técnico de ASYS AUTO. Ayuda a dueños de autos eléctricos analizando manuales, fallos y funciones de pantalla."
+    model: "gemini-1.5-flash", 
+    systemInstruction: "Eres el experto técnico exclusivo de ASYS AUTO. Tu ÚNICA fuente de verdad es la información que te paso en cada consulta. Si el usuario pregunta algo y no está en la información provista, NO inventes, responde amablemente que no tienes ese dato cargado en tu base de datos."
 });
 
 let user = null;
@@ -145,40 +142,59 @@ window.registrarCarga = async (e) => {
     } catch (err) { alert("Error al conectar con la base de datos."); }
 };
 
-// --- 6. ASISTENTE IA ---
+// --- 6. ASISTENTE IA (MODO ESTRICTO) ---
 window.preguntarIA = async () => {
     const prompt = document.getElementById('input-busqueda')?.value;
     const sug = document.getElementById('sugerencias-manual');
     if (!prompt && !fotoBase64) return;
     if(sug) sug.innerHTML = "<p class='text-blue-500 animate-pulse text-[10px] font-black uppercase'>Consultando Cerebro Central...</p>";
 
-    console.log("1. IA Iniciada. Pregunta del usuario:", prompt);
+    console.log("-----------------------------------------");
+    console.log("1. Buscando en base de datos el auto exacto:", estadoAuto.marcaModelo);
 
     try {
         let manualContexto = "";
         try {
-            console.log("2. Buscando manual en Firebase para el modelo:", estadoAuto.marcaModelo);
+            // Buscamos exacto el texto
             const snap = await getDocs(query(collection(db, 'conocimiento_autos'), where("modelo", "==", estadoAuto.marcaModelo || "")));
-            snap.forEach(d => { manualContexto += d.data().contenido + "\n"; });
-            console.log("3. Manual encontrado y cargado.");
+            
+            if (snap.empty) {
+                console.log("⚠️ ATENCIÓN: No se encontró NINGÚN documento en Firebase que tenga de modelo exacto:", estadoAuto.marcaModelo);
+            } else {
+                console.log(`✅ ¡ÉXITO! Se encontraron ${snap.size} documentos en Firebase para este modelo.`);
+            }
+
+            snap.forEach(d => { 
+                const data = d.data();
+                // Revisamos si la info está en "contenido", "texto", "info" o "datos"
+                const textoEncontrado = data.contenido || data.texto || data.info || data.datos || "";
+                manualContexto += textoEncontrado + "\n"; 
+            });
+
+            console.log("2. TEXTO DEL MANUAL EXTRAÍDO DE FIREBASE:\n", manualContexto ? manualContexto : "[EL TEXTO ESTÁ VACÍO O NO EXISTE EL CAMPO 'contenido']");
+
         } catch (e) {
             console.error("❌ Error al buscar en Firebase:", e);
         }
 
-        const instrucciones = `Usa esta info técnica: ${manualContexto}. Pregunta: ${prompt}`;
+        // Si el manual está vacío, le advertimos a Gemini que no invente.
+        if (manualContexto.trim() === "") {
+            manualContexto = "[SISTEMA: NO TIENES INFORMACIÓN EN TU BASE DE DATOS PARA ESTE AUTO. INFORMA ESTO AL USUARIO Y NO INVENTES DATOS].";
+        }
+
+        const instrucciones = `INFO TÉCNICA OBLIGATORIA (Si está vacía, no respondas la duda técnica):\n${manualContexto}\n\nPREGUNTA DEL USUARIO: ${prompt}`;
         
         let partes = [{ text: instrucciones }];
         if (fotoBase64) {
             partes.push({ inlineData: { data: fotoBase64, mimeType: "image/jpeg" } });
-            console.log("4. Foto detectada y adjuntada.");
+            console.log("3. Foto adjuntada.");
         }
 
-        console.log("5. Enviando datos a Gemini...", partes);
-
+        console.log("4. Enviando paquete final a Gemini...");
         const result = await model.generateContent({ contents: [{ parts: partes }] });
         const text = result.response.text();
 
-        console.log("6. ¡Respuesta recibida con éxito!");
+        console.log("5. ¡Respuesta procesada!");
 
         if(sug) sug.innerHTML = `<div class="bg-blue-600/10 p-5 rounded-3xl border border-blue-500/20 text-zinc-200 text-sm leading-relaxed">${text.replace(/\n/g, '<br>')}</div>`;
         window.quitarFoto();
