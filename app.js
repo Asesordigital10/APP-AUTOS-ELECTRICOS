@@ -14,15 +14,19 @@ const firebaseConfig = {
     appId: "1:877759630392:web:eed9d7b0f1a99fd91c2acd"
 };
 
-const GEMINI_KEY = "AIzaSyDjz1zkuKIMw31cD4Clti6Cb2derh-lug0";
+// NUEVA CLAVE DE GEMINI INTEGRADA
+const GEMINI_KEY = "AIzaSyAMnp3deanjgxYhGzUiuI4i3ajd6W8NSVY";
 const RECAPTCHA_SITE_KEY = "6LdE3OosAAAAALzMd8EpS2gkNU6JfG5KmZNv35E5";
 
 // --- 2. INICIALIZACIÓN ---
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// Persistencia para no pedir login cada vez
 setPersistence(auth, browserLocalPersistence);
 
+// App Check (Seguridad)
 try {
     initializeAppCheck(app, {
         provider: new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),
@@ -34,9 +38,10 @@ const provider = new GoogleAuthProvider();
 const genAI = new GoogleGenerativeAI(GEMINI_KEY);
 const model = genAI.getGenerativeModel({ 
     model: "gemini-1.5-flash",
-    systemInstruction: "Eres el experto técnico de ASYS AUTO. Ayuda a dueños de autos eléctricos con manuales y funciones de pantalla."
+    systemInstruction: "Eres el experto técnico de ASYS AUTO. Ayuda a dueños de autos eléctricos analizando manuales, fallos y funciones de pantalla."
 });
 
+// --- 3. ESTADO GLOBAL ---
 let user = null;
 let historialCargas = [];
 let fotoBase64 = null;
@@ -49,7 +54,7 @@ let estadoAuto = {
     combustibles: { "Super 95": 88.03, "Premium 97": 90.09, "Gasoil 10S": 66.27, "Gasoil 50-S": 57.72 }
 };
 
-// --- 3. GESTIÓN DE DATOS Y SESIÓN ---
+// --- 4. GESTIÓN DE DATOS ---
 onAuthStateChanged(auth, (u) => {
     const loginScreen = document.getElementById('login-screen');
     const mainApp = document.getElementById('main-app');
@@ -69,8 +74,8 @@ onAuthStateChanged(auth, (u) => {
                 estadoAuto = { ...estadoAuto, ...data };
                 if (data.precios) estadoAuto.precios = { ...estadoAuto.precios, ...data.precios };
                 if (data.combustibles) estadoAuto.combustibles = { ...estadoAuto.combustibles, ...data.combustibles };
+                renderizarApp();
             }
-            renderizarApp();
         });
     } else {
         user = null;
@@ -79,7 +84,7 @@ onAuthStateChanged(auth, (u) => {
     }
 });
 
-// --- 4. LÓGICA DE CARGA Y COSTOS ---
+// --- 5. LÓGICA DE CARGA Y COSTOS ---
 const calcularCostoReal = (kwh, tarifa) => {
     const p = estadoAuto.precios;
     const k = parseFloat(kwh) || 0;
@@ -95,9 +100,6 @@ window.actualizarPreview = () => {
     let fin = parseFloat(document.getElementById('bat-fin')?.value);
     const tarifa = document.getElementById('tipo-tarifa')?.value;
     const preview = document.getElementById('preview-costo');
-
-    if (inicio < 0) inicio = 0; if (inicio > 100) inicio = 100;
-    if (fin < 0) fin = 0; if (fin > 100) fin = 100;
 
     if (!isNaN(inicio) && !isNaN(fin) && tarifa && preview) {
         if (fin <= inicio) {
@@ -118,27 +120,28 @@ window.registrarCarga = async (e) => {
     const tarifa = document.getElementById('tipo-tarifa').value;
     const esCien = document.getElementById('es-cien').checked;
 
-    // VALIDACIONES
     if (fin <= inicio) return alert("Error: El porcentaje final debe ser mayor al inicial.");
     
     const kmAnterior = historialCargas[0]?.km || 0;
     if (historialCargas.length > 0) {
         if (km <= kmAnterior) return alert("Error: El kilometraje debe ser mayor al anterior (" + kmAnterior + " km).");
         const dif = km - kmAnterior;
-        if (dif > 400) return alert("Error: " + dif + " km excede la autonomía lógica. Revisa el kilometraje.");
+        if (dif > 400) return alert("Error: " + dif + " km excede la autonomía lógica.");
     }
 
     const kwh = ((fin - inicio) / 100) * (estadoAuto.capacidadBateria || 54.3);
     const costo = calcularCostoReal(kwh, tarifa);
 
-    await addDoc(collection(db, 'users', user.uid, 'cargas'), {
-        fecha: Date.now(), km, batIn: inicio, batFin: fin, kwhTotales: kwh, costo, tarifaLabel: tarifa, esCien
-    });
-    e.target.reset();
-    document.getElementById('preview-costo').innerText = "ESPERANDO DATOS";
+    try {
+        await addDoc(collection(db, 'users', user.uid, 'cargas'), {
+            fecha: Date.now(), km, batIn: inicio, batFin: fin, kwhTotales: kwh, costo, tarifaLabel: tarifa, esCien
+        });
+        e.target.reset();
+        document.getElementById('preview-costo').innerText = "REGISTRADO ✅";
+    } catch (err) { alert("Error al conectar con la base de datos."); }
 };
 
-// --- 5. INTELIGENCIA ARTIFICIAL ---
+// --- 6. ASISTENTE IA ---
 window.preguntarIA = async () => {
     const prompt = document.getElementById('input-busqueda')?.value;
     const sug = document.getElementById('sugerencias-manual');
@@ -162,10 +165,10 @@ window.preguntarIA = async () => {
         if(sug) sug.innerHTML = `<div class="bg-blue-600/10 p-5 rounded-3xl border border-blue-500/20 text-zinc-200 text-sm leading-relaxed">${text.replace(/\n/g, '<br>')}</div>`;
         window.quitarFoto();
         document.getElementById('input-busqueda').value = "";
-    } catch (err) { if(sug) sug.innerHTML = "Error de conexión con IA"; }
+    } catch (err) { if(sug) sug.innerHTML = "Error de conexión con IA. Revisa la API Key."; }
 };
 
-// --- 6. RENDERIZADO DE INTERFAZ ---
+// --- 7. RENDERIZADO ---
 function renderizarApp() {
     try {
         const nameEl = document.getElementById('user-display-name');
@@ -184,12 +187,12 @@ function renderizarApp() {
         if(ahorroEl) ahorroEl.innerText = `$ ${Math.round(ahorroTotal).toLocaleString('es-UY')}`;
 
         const fuelEl = document.getElementById('fuel-selectors');
-        if(fuelEl) fuelEl.innerHTML = Object.keys(estadoAuto.combustibles).map(t => `<button onclick="window.cambiarCombustible('${t}')" class="p-2 rounded-xl border text-[9px] font-black uppercase ${estadoAuto.combustibleComparativo === t ? 'bg-green-600 border-green-500 text-white' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}">${t}</button>`).join('');
+        if(fuelEl) fuelEl.innerHTML = Object.keys(estadoAuto.combustibles).map(t => `<button onclick="window.cambiarCombustible('${t}')" class="p-2 rounded-xl border text-[9px] font-black uppercase ${estadoAuto.combustibleComparativo === t ? 'bg-green-600 border-green-500 text-white shadow-lg' : 'bg-zinc-800 border-zinc-700 text-zinc-500'}">${t}</button>`).join('');
 
         let cargasSinCien = 0;
         for (let c of historialCargas) { if (c.esCien) break; cargasSinCien++; }
         const batEl = document.getElementById('card-bateria');
-        if(batEl) batEl.innerHTML = `<div class="bg-zinc-900 border ${cargasSinCien >= 4 ? 'border-purple-500' : 'border-zinc-800'} p-6 rounded-[2.5rem] text-center mb-6 shadow-xl"><p class="text-[10px] text-zinc-500 uppercase font-black mb-2">BALANCEO LFP</p><p class="text-2xl font-black uppercase ${cargasSinCien >= 4 ? 'text-purple-400' : 'text-zinc-100'}">${cargasSinCien >= 4 ? 'CARGAR AL 100% HOY!' : 'TOCA CARGA AL 80%'}</p></div>`;
+        if(batEl) batEl.innerHTML = `<div class="bg-zinc-900 border ${cargasSinCien >= 4 ? 'border-purple-500' : 'border-zinc-800'} p-6 rounded-[2.5rem] text-center mb-6 shadow-xl"><p class="text-[10px] text-zinc-500 uppercase font-black mb-2">BALANCEO LFP</p><p class="text-2xl font-black uppercase ${cargasSinCien >= 4 ? 'text-purple-400' : 'text-zinc-100'}">${cargasSinCien >= 4 ? '¡CARGAR AL 100% HOY!' : 'TOCA CARGA AL 80%'}</p></div>`;
 
         const kmActual = historialCargas[0]?.km || 0;
         const faltanKm = (Math.ceil((kmActual + 1) / 10000) * 10000) - kmActual;
@@ -203,7 +206,7 @@ function renderizarApp() {
     } catch (e) { console.log("Error render:", e); }
 }
 
-// --- 7. GLOBALES ---
+// --- 8. FUNCIONES GLOBALES ---
 window.loginGoogle = async () => { try { await signInWithPopup(auth, provider); } catch (e) { console.error(e); } };
 window.logout = () => signOut(auth).then(() => location.reload());
 window.toggleConfig = () => {
@@ -251,7 +254,7 @@ window.guardarConfig = async (e) => {
     };
     await setDoc(doc(db, 'users', user.uid, 'config', 'general'), data, { merge: true });
     btn.innerText = "¡LISTO! ✅";
-    setTimeout(() => { window.toggleConfig(); btn.innerText = "Guardar"; }, 1000);
+    setTimeout(() => { window.toggleConfig(); btn.innerText = "Guardar Configuración"; }, 1000);
 };
 
 window.previsualizarFoto = () => {
@@ -259,8 +262,10 @@ window.previsualizarFoto = () => {
     const reader = new FileReader();
     reader.onloadend = () => {
         fotoBase64 = reader.result.split(',')[1];
-        document.getElementById('img-preview').src = reader.result;
-        document.getElementById('container-preview').classList.remove('hidden');
+        const img = document.getElementById('img-preview');
+        const cont = document.getElementById('container-preview');
+        if(img) img.src = reader.result;
+        if(cont) cont.classList.remove('hidden');
     };
     if (file) reader.readAsDataURL(file);
 };
@@ -278,7 +283,7 @@ window.exportarExcel = () => {
     const blob = new Blob([csv], { type: 'text/csv' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = "bitacora.csv";
+    link.download = "bitacora_asysauto.csv";
     link.click();
 };
 
