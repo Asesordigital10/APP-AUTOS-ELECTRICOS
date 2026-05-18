@@ -38,9 +38,9 @@ try {
 const provider = new GoogleAuthProvider();
 const genAI = new GoogleGenerativeAI(GEMINI_KEY);
 
-// Usamos el modelo rápido y estable de nueva generación
+// ¡AQUÍ ESTÁ LA CORRECCIÓN! Usamos el modelo 2.5-flash que sí existe en tu cuenta
 const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash", 
+    model: "gemini-2.5-flash", 
     systemInstruction: "Eres el experto técnico de ASYS AUTO. Ayuda a dueños de autos eléctricos analizando manuales, fallos y funciones de pantalla."
 });
 
