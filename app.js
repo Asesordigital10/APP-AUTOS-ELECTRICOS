@@ -36,10 +36,8 @@ try {
 const provider = new GoogleAuthProvider();
 const genAI = new GoogleGenerativeAI(GEMINI_KEY);
 
-// ¡AQUÍ ESTÁ LA SOLUCIÓN! Usamos el modelo 2.5 que tu cuenta sí soporta.
 const model = genAI.getGenerativeModel({ 
-    model: "gemini-2.5-flash", 
-    systemInstruction: "Eres el experto técnico exclusivo de ASYS AUTO. Tu ÚNICA fuente de verdad es la información que te paso en cada consulta. Si el usuario pregunta algo y no está en la información provista, NO inventes, responde amablemente que no tienes ese dato cargado en tu base de datos."
+    model: "gemini-2.5-flash"
 });
 
 let user = null;
@@ -143,7 +141,7 @@ window.registrarCarga = async (e) => {
     } catch (err) { alert("Error al conectar con la base de datos."); }
 };
 
-// --- 6. ASISTENTE IA (MODO ESTRICTO Y MODELO CORREGIDO) ---
+// --- 6. ASISTENTE IA (CON CONSULTA MILIMÉTRICA) ---
 window.preguntarIA = async () => {
     const prompt = document.getElementById('input-busqueda')?.value;
     const sug = document.getElementById('sugerencias-manual');
@@ -151,48 +149,45 @@ window.preguntarIA = async () => {
     if(sug) sug.innerHTML = "<p class='text-blue-500 animate-pulse text-[10px] font-black uppercase'>Consultando Cerebro Central...</p>";
 
     console.log("-----------------------------------------");
-    console.log("1. Buscando en base de datos el auto exacto:", estadoAuto.marcaModelo);
+    console.log(`1. Buscando manual exacto para: [${estadoAuto.marcaModelo}]`);
 
     try {
         let manualContexto = "";
         try {
+            // Como el usuario usa un desplegable, podemos volver a la consulta exacta que es más rápida y barata en Firebase
             const snap = await getDocs(query(collection(db, 'conocimiento_autos'), where("modelo", "==", estadoAuto.marcaModelo || "")));
             
             if (snap.empty) {
-                console.log("⚠️ ATENCIÓN: No se encontró NINGÚN documento en Firebase que tenga de modelo exacto:", estadoAuto.marcaModelo);
+                console.log("⚠️ ATENCIÓN: No hay un manual para esta versión específica en Firebase.");
             } else {
-                console.log(`✅ ¡ÉXITO! Se encontraron ${snap.size} documentos en Firebase para este modelo.`);
+                console.log(`✅ ¡ÉXITO! Manual encontrado.`);
+                snap.forEach(d => { 
+                    const data = d.data();
+                    const textoEncontrado = data.contenido || data.texto || data.info || data.datos || "";
+                    manualContexto += textoEncontrado + "\n"; 
+                });
             }
-
-            snap.forEach(d => { 
-                const data = d.data();
-                const textoEncontrado = data.contenido || data.texto || data.info || data.datos || "";
-                manualContexto += textoEncontrado + "\n"; 
-            });
-
-            console.log("2. TEXTO DEL MANUAL EXTRAÍDO DE FIREBASE:\n", manualContexto ? manualContexto : "[EL TEXTO ESTÁ VACÍO O NO EXISTE EL CAMPO]");
-
         } catch (e) {
-            console.error("❌ Error al buscar en Firebase:", e);
+            console.error("❌ Error al leer Firebase:", e);
         }
 
+        let instrucciones = "";
         if (manualContexto.trim() === "") {
-            manualContexto = "[SISTEMA: NO TIENES INFORMACIÓN EN TU BASE DE DATOS PARA ESTE AUTO. INFORMA ESTO AL USUARIO Y NO INVENTES DATOS].";
+            instrucciones = `Eres el asistente de ASYS AUTO. El usuario tiene un ${estadoAuto.marcaModelo} pero actualmente NO TIENES el manual técnico de esta versión exacta cargado. Pídele disculpas amablemente y dile que pronto se subirá la información.\n\nPREGUNTA DEL USUARIO: ${prompt}`;
+        } else {
+            instrucciones = `Eres el experto técnico de ASYS AUTO. El usuario tiene un ${estadoAuto.marcaModelo}. Tu tarea es ayudarle basándote ÚNICAMENTE en este manual oficial. Si la respuesta no está en el texto, di que no tienes esa información, NO inventes.\n\n--- MANUAL OFICIAL ---\n${manualContexto}\n----------------------\n\nPREGUNTA DEL USUARIO: ${prompt}`;
         }
-
-        const instrucciones = `INFO TÉCNICA OBLIGATORIA:\n${manualContexto}\n\nPREGUNTA DEL USUARIO: ${prompt}`;
         
         let partes = [{ text: instrucciones }];
         if (fotoBase64) {
             partes.push({ inlineData: { data: fotoBase64, mimeType: "image/jpeg" } });
-            console.log("3. Foto adjuntada.");
         }
 
-        console.log("4. Enviando paquete final a Gemini...");
+        console.log("2. Enviando paquete optimizado a Gemini 2.5 Flash...");
         const result = await model.generateContent({ contents: [{ parts: partes }] });
         const text = result.response.text();
 
-        console.log("5. ¡Respuesta procesada!");
+        console.log("3. ¡Respuesta procesada!");
 
         if(sug) sug.innerHTML = `<div class="bg-blue-600/10 p-5 rounded-3xl border border-blue-500/20 text-zinc-200 text-sm leading-relaxed">${text.replace(/\n/g, '<br>')}</div>`;
         window.quitarFoto();
@@ -214,9 +209,16 @@ function renderizarApp() {
         if (historialCargas.length >= 2) {
             const ordenadas = [...historialCargas].sort((a,b) => a.km - b.km);
             const precioNafta = estadoAuto.combustibles[estadoAuto.combustibleComparativo] || 88.03;
+            
+            // Validación de seguridad para el cálculo
+            let rendimientoSeguro = parseFloat(estadoAuto.rendimientoAnterior);
+            if (isNaN(rendimientoSeguro) || rendimientoSeguro <= 0) rendimientoSeguro = 12;
+
             for(let i=1; i < ordenadas.length; i++){
                 const dist = ordenadas[i].km - ordenadas[i-1].km;
-                if (dist > 0) ahorroTotal += ((dist / (estadoAuto.rendimientoAnterior || 12)) * precioNafta) - (parseFloat(ordenadas[i].costo) || 0);
+                if (dist > 0) {
+                    ahorroTotal += ((dist / rendimientoSeguro) * precioNafta) - (parseFloat(ordenadas[i].costo) || 0);
+                }
             }
         }
         const ahorroEl = document.getElementById('ahorro-valor');
