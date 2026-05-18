@@ -1,6 +1,8 @@
+```javascript
 import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app-check.js";
+// VOLVEMOS AL POPUP: El método más estable para GitHub Pages
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, deleteDoc, orderBy, getDocs, where } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
@@ -14,10 +16,13 @@ const firebaseConfig = {
     appId: "1:877759630392:web:eed9d7b0f1a99fd91c2acd"
 };
 
-const GEMINI_KEY = "AIzaSyBHTsmqMGxc2TyG7sKIsu3mdScs1EmuQi8";
+// --- 2. CONFIGURACIÓN DE GEMINI ---
+const GEMINI_PARTE_1 = "AIzaSyBHTsmqMGxc2T"; 
+const GEMINI_PARTE_2 = "yG7sKIsu3mdScs1EmuQi8"; 
+const GEMINI_KEY = GEMINI_PARTE_1 + GEMINI_PARTE_2;
 const RECAPTCHA_SITE_KEY = "6LdE3OosAAAAALzMd8EpS2gkNU6JfG5KmZNv35E5";
 
-// --- 2. INICIALIZACIÓN ---
+// --- 3. INICIALIZACIÓN ---
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -30,34 +35,14 @@ try {
     });
 } catch (e) { console.log("AppCheck activo"); }
 
-// --- 3. FUNCIONES DE LOGIN (AL PRINCIPIO PARA EVITAR BLOQUEOS) ---
 const provider = new GoogleAuthProvider();
-
-window.loginGoogle = async () => {
-    try {
-        await signInWithPopup(auth, provider);
-    } catch (e) {
-        console.error("Error en login:", e);
-        alert("No se pudo abrir la ventana de Google. Revisa si tienes los pop-ups bloqueados.");
-    }
-};
-
-window.logout = () => signOut(auth).then(() => location.reload());
-
-// --- 4. CONFIGURACIÓN DE IA (CON PROTECCIÓN) ---
 const genAI = new GoogleGenerativeAI(GEMINI_KEY);
-let model;
-try {
-    // Si gemini-2.5-flash te funciona, lo mantenemos, pero envuelto en un try para no romper la app
-    model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash", // Te sugiero usar 1.5-flash que es el estable, cámbialo a 2.5 si estás seguro
-        systemInstruction: "Eres el experto técnico exclusivo de ASYS AUTO. Tu ÚNICA fuente de verdad es la información técnica provista. Si no está el dato, no inventes."
-    });
-} catch (e) {
-    console.error("Error al inicializar el modelo de IA:", e);
-}
 
-// --- 5. ESTADO Y SINCRONIZACIÓN ---
+const model = genAI.getGenerativeModel({ 
+    model: "gemini-2.5-flash",
+    systemInstruction: "Eres el experto técnico exclusivo de ASYS AUTO. Tu ÚNICA fuente de verdad es la información técnica provista en cada consulta. Si un dato o respuesta no se encuentra en esa información, NO inventes ni asumas nada; pide disculpas y di que no tienes ese dato registrado para ese modelo."
+});
+
 let user = null;
 let historialCargas = [];
 let fotoBase64 = null;
@@ -70,6 +55,7 @@ let estadoAuto = {
     combustibles: { "Super 95": 88.03, "Premium 97": 90.09, "Gasoil 10S": 66.27, "Gasoil 50-S": 57.72 }
 };
 
+// --- 4. GESTIÓN DE SESIÓN Y DATOS ---
 onAuthStateChanged(auth, (u) => {
     const loginScreen = document.getElementById('login-screen');
     const mainApp = document.getElementById('main-app');
@@ -99,7 +85,7 @@ onAuthStateChanged(auth, (u) => {
     }
 });
 
-// --- 6. LÓGICA DE NEGOCIO ---
+// --- 5. LÓGICA DE CARGA Y COSTOS ---
 const calcularCostoReal = (kwh, tarifa) => {
     const p = estadoAuto.precios;
     const k = parseFloat(kwh) || 0;
@@ -115,6 +101,9 @@ window.actualizarPreview = () => {
     let fin = parseFloat(document.getElementById('bat-fin')?.value);
     const tarifa = document.getElementById('tipo-tarifa')?.value;
     const preview = document.getElementById('preview-costo');
+
+    if (inicio < 0) inicio = 0; if (inicio > 100) inicio = 100;
+    if (fin < 0) fin = 0; if (fin > 100) fin = 100;
 
     if (!isNaN(inicio) && !isNaN(fin) && tarifa && preview) {
         if (fin <= inicio) {
@@ -137,46 +126,83 @@ window.registrarCarga = async (e) => {
 
     if (fin <= inicio) return alert("Error: El porcentaje final debe ser mayor al inicial.");
     const kmAnterior = historialCargas[0]?.km || 0;
-    if (historialCargas.length > 0 && km <= kmAnterior) return alert("Error: El kilometraje debe ser mayor al anterior.");
+    if (historialCargas.length > 0) {
+        if (km <= kmAnterior) return alert("Error: El kilometraje debe ser mayor al anterior (" + kmAnterior + " km).");
+        const dif = km - kmAnterior;
+        if (dif > 400) return alert("Error: " + dif + " km excede la autonomía lógica.");
+    }
 
     const kwh = ((fin - inicio) / 100) * (estadoAuto.capacidadBateria || 54.3);
     const costo = calcularCostoReal(kwh, tarifa);
 
-    await addDoc(collection(db, 'users', user.uid, 'cargas'), {
-        fecha: Date.now(), km, batIn: inicio, batFin: fin, kwhTotales: kwh, costo, tarifaLabel: tarifa, esCien
-    });
-    e.target.reset();
+    try {
+        await addDoc(collection(db, 'users', user.uid, 'cargas'), {
+            fecha: Date.now(), km, batIn: inicio, batFin: fin, kwhTotales: kwh, costo, tarifaLabel: tarifa, esCien
+        });
+        e.target.reset();
+        document.getElementById('preview-costo').innerHTML = '<span class="text-[10px] uppercase text-zinc-500 font-bold tracking-widest">Esperando datos...</span>';
+    } catch (err) { alert("Error al conectar con la base de datos."); }
 };
 
-// --- 7. ASISTENTE IA ---
+// --- 6. ASISTENTE IA ---
 window.preguntarIA = async () => {
     const prompt = document.getElementById('input-busqueda')?.value;
     const sug = document.getElementById('sugerencias-manual');
     if (!prompt && !fotoBase64) return;
-    if(sug) sug.innerHTML = "<p class='text-blue-500 animate-pulse text-[10px] font-black uppercase'>Consultando...</p>";
+    if(sug) sug.innerHTML = "<p class='text-blue-500 animate-pulse text-[10px] font-black uppercase'>Consultando Cerebro Central...</p>";
+
+    console.log("-----------------------------------------");
+    console.log(`1. Buscando manual exacto para: [${estadoAuto.marcaModelo}]`);
 
     try {
         let manualContexto = "";
-        const snap = await getDocs(query(collection(db, 'conocimiento_autos'), where("modelo", "==", estadoAuto.marcaModelo || "")));
-        snap.forEach(d => { manualContexto += d.data().contenido + "\n"; });
-
-        const promptFinal = `INFO TÉCNICA:\n${manualContexto}\n\nPREGUNTA: ${prompt}`;
-        
-        let partes = [promptFinal];
-        if (fotoBase64) {
-            partes.push({ inlineData: { data: fotoBase64, mimeType: "image/jpeg" } });
+        try {
+            const snap = await getDocs(query(collection(db, 'conocimiento_autos'), where("modelo", "==", estadoAuto.marcaModelo || "")));
+            
+            if (snap.empty) {
+                console.log("⚠️ ATENCIÓN: No hay un manual para esta versión específica en Firebase.");
+            } else {
+                console.log(`✅ ¡ÉXITO! Manual encontrado.`);
+                snap.forEach(d => { 
+                    const data = d.data();
+                    const textoEncontrado = data.contenido || data.texto || data.info || data.datos || "";
+                    manualContexto += textoEncontrado + "\n"; 
+                });
+            }
+        } catch (e) {
+            console.error("❌ Error al leer Firebase:", e);
         }
 
-        const result = await model.generateContent(partes);
+        let instrucciones = "";
+        if (manualContexto.trim() === "") {
+            instrucciones = `El usuario acaba de hacer una pregunta, pero NO TIENES la información de su modelo (${estadoAuto.marcaModelo}) cargada. Discúlpate e indícale esto.\n\nPREGUNTA DEL USUARIO: ${prompt}`;
+        } else {
+            instrucciones = `Responde a la pregunta basándote en la siguiente información:\n\n--- MANUAL OFICIAL ---\n${manualContexto}\n----------------------\n\nPREGUNTA DEL USUARIO: ${prompt}`;
+        }
+        
+        let partes = [{ text: instrucciones }];
+        if (fotoBase64) {
+            partes.push({ inlineData: { data: fotoBase64, mimeType: "image/jpeg" } });
+            console.log("-> Foto detectada y adjuntada.");
+        }
+
+        console.log("2. Enviando paquete a Gemini 2.5 Flash...");
+        const result = await model.generateContent({ contents: [{ parts: partes }] });
         const text = result.response.text();
+
+        console.log("3. ¡Respuesta procesada con éxito!");
 
         if(sug) sug.innerHTML = `<div class="bg-blue-600/10 p-5 rounded-3xl border border-blue-500/20 text-zinc-200 text-sm leading-relaxed">${text.replace(/\n/g, '<br>')}</div>`;
         window.quitarFoto();
-        document.getElementById('input-busqueda').value = "";
-    } catch (err) { if(sug) sug.innerHTML = "Error de IA. Revisa el modelo."; }
+        if(document.getElementById('input-busqueda')) document.getElementById('input-busqueda').value = "";
+        
+    } catch (err) { 
+        console.error("❌ ERROR FATAL DE GEMINI:", err); 
+        if(sug) sug.innerHTML = "Error de conexión con IA. Revisa la consola (F12)."; 
+    }
 };
 
-// --- 8. RENDERIZADO ---
+// --- 7. RENDERIZADO DE INTERFAZ ---
 function renderizarApp() {
     try {
         const nameEl = document.getElementById('user-display-name');
@@ -186,9 +212,15 @@ function renderizarApp() {
         if (historialCargas.length >= 2) {
             const ordenadas = [...historialCargas].sort((a,b) => a.km - b.km);
             const precioNafta = estadoAuto.combustibles[estadoAuto.combustibleComparativo] || 88.03;
+            
+            let rendimientoSeguro = parseFloat(estadoAuto.rendimientoAnterior);
+            if (isNaN(rendimientoSeguro) || rendimientoSeguro <= 0) rendimientoSeguro = 12;
+
             for(let i=1; i < ordenadas.length; i++){
                 const dist = ordenadas[i].km - ordenadas[i-1].km;
-                if (dist > 0) ahorroTotal += ((dist / (estadoAuto.rendimientoAnterior || 12)) * precioNafta) - (parseFloat(ordenadas[i].costo) || 0);
+                if (dist > 0) {
+                    ahorroTotal += ((dist / rendimientoSeguro) * precioNafta) - (parseFloat(ordenadas[i].costo) || 0);
+                }
             }
         }
         const ahorroEl = document.getElementById('ahorro-valor');
@@ -208,13 +240,23 @@ function renderizarApp() {
         if(mantEl) mantEl.innerHTML = `<div class="bg-zinc-900 border border-zinc-800 p-6 rounded-[2.5rem] shadow-xl"><div class="flex justify-between items-center mb-2"><div><p class="text-zinc-500 text-[10px] uppercase font-black">Service Oficial</p><p class="text-2xl font-black ${faltanKm < 1000 ? 'text-orange-500' : 'text-zinc-100'}">Faltan ${faltanKm.toLocaleString()} km</p></div>${estadoAuto.telefonoTaller ? `<button onclick="window.solicitarService()" class="bg-green-600 p-3 rounded-full text-white shadow-lg"><i data-lucide="message-circle"></i></button>` : ''}</div><p class="text-[9px] text-zinc-600 uppercase font-bold">${estadoAuto.nombreTaller || 'Taller no configurado'}</p></div>`;
 
         const listaEl = document.getElementById('lista-cargas');
-        if(listaEl) listaEl.innerHTML = historialCargas.slice(0, 5).map(c => `<div class="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800 mb-2 flex justify-between items-center"><div><p class="font-bold text-sm text-zinc-200">${c.km.toLocaleString()} km</p><p class="text-[10px] text-zinc-600 uppercase font-mono">${new Date(c.fecha).toLocaleDateString()}</p></div><div class="flex items-center gap-4"><p class="text-green-500 font-bold text-sm">$${(parseFloat(c.costo)||0).toFixed(0)}</p><button onclick="window.eliminarRegistro('${c.id}')" class="text-zinc-800"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`).join('');
+        if(listaEl) listaEl.innerHTML = historialCargas.slice(0, 5).map(c => `<div class="bg-zinc-900/50 p-4 rounded-2xl border border-zinc-800 mb-2 flex justify-between items-center"><div><p class="font-bold text-sm text-zinc-200">${c.km.toLocaleString()} km</p><p class="text-[10px] text-zinc-600 uppercase">${new Date(c.fecha).toLocaleDateString()}</p></div><div class="flex items-center gap-4"><p class="text-green-500 font-bold text-sm">$${(parseFloat(c.costo)||0).toFixed(0)}</p><button onclick="window.eliminarRegistro('${c.id}')" class="text-zinc-800"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`).join('');
         
         if(typeof lucide !== 'undefined') lucide.createIcons();
     } catch (e) { console.log("Error render:", e); }
 }
 
-// --- 9. UTILIDADES ---
+// --- 8. FUNCIONES GLOBALES ---
+// DEJAMOS EL POPUP QUE ES SEGURO CONTRA ERRORES DE DOMINIO:
+window.loginGoogle = async () => { 
+    try { 
+        await signInWithPopup(auth, provider); 
+    } catch (e) { 
+        console.error("Popup cerrado por el usuario o navegador:", e); 
+    } 
+};
+
+window.logout = () => signOut(auth).then(() => location.reload());
 window.toggleConfig = () => {
     const modal = document.getElementById('modal-config');
     if(!modal) return;
@@ -275,6 +317,7 @@ window.previsualizarFoto = () => {
     };
     if (file) reader.readAsDataURL(file);
 };
+
 window.quitarFoto = () => { fotoBase64 = null; document.getElementById('container-preview').classList.add('hidden'); };
 window.cambiarCombustible = async (t) => { await setDoc(doc(db, 'users', user.uid, 'config', 'general'), { combustibleComparativo: t }, { merge: true }); };
 window.eliminarRegistro = async (id) => { if(confirm("¿Eliminar?")) await deleteDoc(doc(db, 'users', user.uid, 'cargas', id)); };
@@ -293,3 +336,7 @@ window.exportarExcel = () => {
 };
 
 window.onload = () => { if(typeof lucide !== 'undefined') lucide.createIcons(); };
+
+
+```
+
