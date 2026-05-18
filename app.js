@@ -1,8 +1,8 @@
 import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app-check.js";
-// ¡ACÁ ESTÁ EL CAMBIO! Usamos signInWithRedirect en lugar de popup
-import { getAuth, onAuthStateChanged, signInWithRedirect, GoogleAuthProvider, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+// VOLVEMOS AL POPUP: El método más estable para GitHub Pages
+import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, deleteDoc, orderBy, getDocs, where } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
 // --- 1. CONFIGURACIÓN DE FIREBASE ---
@@ -246,8 +246,14 @@ function renderizarApp() {
 }
 
 // --- 8. FUNCIONES GLOBALES ---
-// ¡ACÁ ESTÁ EL SEGUNDO CAMBIO! Activamos la redirección
-window.loginGoogle = () => { signInWithRedirect(auth, provider); };
+// DEJAMOS EL POPUP QUE ES SEGURO CONTRA ERRORES DE DOMINIO:
+window.loginGoogle = async () => { 
+    try { 
+        await signInWithPopup(auth, provider); 
+    } catch (e) { 
+        console.error("Popup cerrado por el usuario o navegador:", e); 
+    } 
+};
 
 window.logout = () => signOut(auth).then(() => location.reload());
 window.toggleConfig = () => {
