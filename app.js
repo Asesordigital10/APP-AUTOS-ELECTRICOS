@@ -44,7 +44,7 @@ let fotoBase64 = null;
 let estadoAuto = { 
     tipoUso: "particular", combustibleComparativo: "Super 95",
     nombreUsuario: "", marcaModelo: "", matricula: "",
-    capacidadBateria: 54.3, rendimientoAnterior: 12,
+    capacityBateria: 54.3, rendimientoAnterior: 12,
     nombreTaller: "", direccionTaller: "", telefonoTaller: "",
     precios: { hogarValle: 2.32, uteLenta: 7.54, uteRapida: 10.80, wallboxEspecial: 12.00 },
     combustibles: { "Super 95": 88.03, "Premium 97": 90.09, "Gasoil 10S": 66.27, "Gasoil 50-S": 57.72 }
@@ -164,7 +164,11 @@ window.preguntarIA = async () => {
         if(sug) sug.innerHTML = `<div class="bg-blue-600/10 p-5 rounded-3xl border border-blue-500/20 text-zinc-200 text-sm leading-relaxed">${text.replace(/\n/g, '<br>')}</div>`;
         window.quitarFoto();
         document.getElementById('input-busqueda').value = "";
-    } catch (err) { if(sug) sug.innerHTML = "Error de conexión con IA. Revisa la configuración."; }
+    } catch (err) { 
+        // Esta línea nos mostrará el error exacto en la consola (F12) para saber qué pasa
+        console.error("Error real de Gemini:", err); 
+        if(sug) sug.innerHTML = "Error de conexión con IA. Revisa la configuración."; 
+    }
 };
 
 // --- 7. RENDERIZADO DE INTERFAZ ---
