@@ -1,7 +1,8 @@
 import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app-check.js";
-import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+// ¡ACÁ ESTÁ EL CAMBIO! Usamos signInWithRedirect en lugar de popup
+import { getAuth, onAuthStateChanged, signInWithRedirect, GoogleAuthProvider, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, deleteDoc, orderBy, getDocs, where } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
 // --- 1. CONFIGURACIÓN DE FIREBASE ---
@@ -36,7 +37,6 @@ try {
 const provider = new GoogleAuthProvider();
 const genAI = new GoogleGenerativeAI(GEMINI_KEY);
 
-// MEJORA AI STUDIO: Personalidad grabada a fuego en la inicialización
 const model = genAI.getGenerativeModel({ 
     model: "gemini-2.5-flash",
     systemInstruction: "Eres el experto técnico exclusivo de ASYS AUTO. Tu ÚNICA fuente de verdad es la información técnica provista en cada consulta. Si un dato o respuesta no se encuentra en esa información, NO inventes ni asumas nada; pide disculpas y di que no tienes ese dato registrado para ese modelo."
@@ -139,12 +139,11 @@ window.registrarCarga = async (e) => {
             fecha: Date.now(), km, batIn: inicio, batFin: fin, kwhTotales: kwh, costo, tarifaLabel: tarifa, esCien
         });
         e.target.reset();
-        // Nuestro arreglo de diseño que AI Studio borró
         document.getElementById('preview-costo').innerHTML = '<span class="text-[10px] uppercase text-zinc-500 font-bold tracking-widest">Esperando datos...</span>';
     } catch (err) { alert("Error al conectar con la base de datos."); }
 };
 
-// --- 6. ASISTENTE IA (CON CONSULTA MILIMÉTRICA Y TRACKERS) ---
+// --- 6. ASISTENTE IA ---
 window.preguntarIA = async () => {
     const prompt = document.getElementById('input-busqueda')?.value;
     const sug = document.getElementById('sugerencias-manual');
@@ -173,7 +172,6 @@ window.preguntarIA = async () => {
             console.error("❌ Error al leer Firebase:", e);
         }
 
-        // Nuestro escudo de seguridad que AI Studio omitió
         let instrucciones = "";
         if (manualContexto.trim() === "") {
             instrucciones = `El usuario acaba de hacer una pregunta, pero NO TIENES la información de su modelo (${estadoAuto.marcaModelo}) cargada. Discúlpate e indícale esto.\n\nPREGUNTA DEL USUARIO: ${prompt}`;
@@ -187,7 +185,7 @@ window.preguntarIA = async () => {
             console.log("-> Foto detectada y adjuntada.");
         }
 
-        console.log("2. Enviando paquete optimizado a Gemini 2.5 Flash...");
+        console.log("2. Enviando paquete a Gemini 2.5 Flash...");
         const result = await model.generateContent({ contents: [{ parts: partes }] });
         const text = result.response.text();
 
@@ -248,7 +246,9 @@ function renderizarApp() {
 }
 
 // --- 8. FUNCIONES GLOBALES ---
-window.loginGoogle = async () => { try { await signInWithPopup(auth, provider); } catch (e) { console.error(e); } };
+// ¡ACÁ ESTÁ EL SEGUNDO CAMBIO! Activamos la redirección
+window.loginGoogle = () => { signInWithRedirect(auth, provider); };
+
 window.logout = () => signOut(auth).then(() => location.reload());
 window.toggleConfig = () => {
     const modal = document.getElementById('modal-config');
