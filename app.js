@@ -33,8 +33,10 @@ try {
 
 const provider = new GoogleAuthProvider();
 const genAI = new GoogleGenerativeAI(GEMINI_KEY);
+
+// EL CAMBIO ESTÁ AQUÍ: Actualizado al modelo exacto de tu AI Studio
 const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash",
+    model: "gemini-3-flash-preview", 
     systemInstruction: "Eres el experto técnico de ASYS AUTO. Ayuda a dueños de autos eléctricos analizando manuales, fallos y funciones de pantalla."
 });
 
@@ -140,7 +142,7 @@ window.registrarCarga = async (e) => {
     } catch (err) { alert("Error al conectar con la base de datos."); }
 };
 
-// --- 6. ASISTENTE IA (Estructura Corregida para evitar Error 400) ---
+// --- 6. ASISTENTE IA ---
 window.preguntarIA = async () => {
     const prompt = document.getElementById('input-busqueda')?.value;
     const sug = document.getElementById('sugerencias-manual');
@@ -156,14 +158,13 @@ window.preguntarIA = async () => {
 
         const instrucciones = `Usa esta info técnica: ${manualContexto}. Pregunta: ${prompt}`;
         
-        // Formato estructurado estricto para evitar incompatibilidades de tipos en el backend de Google
+        // Estructura limpia y 100% compatible para evitar el error 400
         let partes = [{ text: instrucciones }];
         if (fotoBase64) {
             partes.push({ inlineData: { data: fotoBase64, mimeType: "image/jpeg" } });
         }
 
-        // Llamada con la envoltura oficial del SDK de Gemini
-        const result = await model.generateContent({ contents: [{ parts: partes }] });
+        const result = await model.generateContent(partes);
         const text = result.response.text();
 
         if(sug) sug.innerHTML = `<div class="bg-blue-600/10 p-5 rounded-3xl border border-blue-500/20 text-zinc-200 text-sm leading-relaxed">${text.replace(/\n/g, '<br>')}</div>`;
