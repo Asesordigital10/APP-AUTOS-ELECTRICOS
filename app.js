@@ -36,8 +36,10 @@ try {
 const provider = new GoogleAuthProvider();
 const genAI = new GoogleGenerativeAI(GEMINI_KEY);
 
+// MEJORA AI STUDIO: Personalidad grabada a fuego en la inicialización
 const model = genAI.getGenerativeModel({ 
-    model: "gemini-2.5-flash"
+    model: "gemini-2.5-flash",
+    systemInstruction: "Eres el experto técnico exclusivo de ASYS AUTO. Tu ÚNICA fuente de verdad es la información técnica provista en cada consulta. Si un dato o respuesta no se encuentra en esa información, NO inventes ni asumas nada; pide disculpas y di que no tienes ese dato registrado para ese modelo."
 });
 
 let user = null;
@@ -137,11 +139,12 @@ window.registrarCarga = async (e) => {
             fecha: Date.now(), km, batIn: inicio, batFin: fin, kwhTotales: kwh, costo, tarifaLabel: tarifa, esCien
         });
         e.target.reset();
+        // Nuestro arreglo de diseño que AI Studio borró
         document.getElementById('preview-costo').innerHTML = '<span class="text-[10px] uppercase text-zinc-500 font-bold tracking-widest">Esperando datos...</span>';
     } catch (err) { alert("Error al conectar con la base de datos."); }
 };
 
-// --- 6. ASISTENTE IA (CON CONSULTA MILIMÉTRICA) ---
+// --- 6. ASISTENTE IA (CON CONSULTA MILIMÉTRICA Y TRACKERS) ---
 window.preguntarIA = async () => {
     const prompt = document.getElementById('input-busqueda')?.value;
     const sug = document.getElementById('sugerencias-manual');
@@ -154,7 +157,6 @@ window.preguntarIA = async () => {
     try {
         let manualContexto = "";
         try {
-            // Como el usuario usa un desplegable, podemos volver a la consulta exacta que es más rápida y barata en Firebase
             const snap = await getDocs(query(collection(db, 'conocimiento_autos'), where("modelo", "==", estadoAuto.marcaModelo || "")));
             
             if (snap.empty) {
@@ -171,23 +173,25 @@ window.preguntarIA = async () => {
             console.error("❌ Error al leer Firebase:", e);
         }
 
+        // Nuestro escudo de seguridad que AI Studio omitió
         let instrucciones = "";
         if (manualContexto.trim() === "") {
-            instrucciones = `Eres el asistente de ASYS AUTO. El usuario tiene un ${estadoAuto.marcaModelo} pero actualmente NO TIENES el manual técnico de esta versión exacta cargado. Pídele disculpas amablemente y dile que pronto se subirá la información.\n\nPREGUNTA DEL USUARIO: ${prompt}`;
+            instrucciones = `El usuario acaba de hacer una pregunta, pero NO TIENES la información de su modelo (${estadoAuto.marcaModelo}) cargada. Discúlpate e indícale esto.\n\nPREGUNTA DEL USUARIO: ${prompt}`;
         } else {
-            instrucciones = `Eres el experto técnico de ASYS AUTO. El usuario tiene un ${estadoAuto.marcaModelo}. Tu tarea es ayudarle basándote ÚNICAMENTE en este manual oficial. Si la respuesta no está en el texto, di que no tienes esa información, NO inventes.\n\n--- MANUAL OFICIAL ---\n${manualContexto}\n----------------------\n\nPREGUNTA DEL USUARIO: ${prompt}`;
+            instrucciones = `Responde a la pregunta basándote en la siguiente información:\n\n--- MANUAL OFICIAL ---\n${manualContexto}\n----------------------\n\nPREGUNTA DEL USUARIO: ${prompt}`;
         }
         
         let partes = [{ text: instrucciones }];
         if (fotoBase64) {
             partes.push({ inlineData: { data: fotoBase64, mimeType: "image/jpeg" } });
+            console.log("-> Foto detectada y adjuntada.");
         }
 
         console.log("2. Enviando paquete optimizado a Gemini 2.5 Flash...");
         const result = await model.generateContent({ contents: [{ parts: partes }] });
         const text = result.response.text();
 
-        console.log("3. ¡Respuesta procesada!");
+        console.log("3. ¡Respuesta procesada con éxito!");
 
         if(sug) sug.innerHTML = `<div class="bg-blue-600/10 p-5 rounded-3xl border border-blue-500/20 text-zinc-200 text-sm leading-relaxed">${text.replace(/\n/g, '<br>')}</div>`;
         window.quitarFoto();
@@ -210,7 +214,6 @@ function renderizarApp() {
             const ordenadas = [...historialCargas].sort((a,b) => a.km - b.km);
             const precioNafta = estadoAuto.combustibles[estadoAuto.combustibleComparativo] || 88.03;
             
-            // Validación de seguridad para el cálculo
             let rendimientoSeguro = parseFloat(estadoAuto.rendimientoAnterior);
             if (isNaN(rendimientoSeguro) || rendimientoSeguro <= 0) rendimientoSeguro = 12;
 
