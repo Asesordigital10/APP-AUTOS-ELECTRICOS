@@ -4,7 +4,7 @@ import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, deleteDoc, orderBy, getDocs, where } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// --- 1. CONFIGURACIÓN ---
+// --- 1. CONFIGURACIÓN DE FIREBASE (Usa la Clave Original Restringida) ---
 const firebaseConfig = {
     apiKey: "AIzaSyA11UK2o8-EgE9vTTcw-eeA55yC-n9eZIg",
     authDomain: "app-autos-electricos-5a311.firebaseapp.com",
@@ -14,19 +14,16 @@ const firebaseConfig = {
     appId: "1:877759630392:web:eed9d7b0f1a99fd91c2acd"
 };
 
-// NUEVA CLAVE DE GEMINI INTEGRADA
+// --- 2. CONFIGURACIÓN DE GEMINI (Usa la Clave Nueva sin Restricciones) ---
 const GEMINI_KEY = "AIzaSyAMnp3deanjgxYhGzUiuI4i3ajd6W8NSVY";
 const RECAPTCHA_SITE_KEY = "6LdE3OosAAAAALzMd8EpS2gkNU6JfG5KmZNv35E5";
 
-// --- 2. INICIALIZACIÓN ---
+// --- 3. INICIALIZACIÓN ---
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-
-// Persistencia para no pedir login cada vez
 setPersistence(auth, browserLocalPersistence);
 
-// App Check (Seguridad)
 try {
     initializeAppCheck(app, {
         provider: new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),
@@ -41,7 +38,6 @@ const model = genAI.getGenerativeModel({
     systemInstruction: "Eres el experto técnico de ASYS AUTO. Ayuda a dueños de autos eléctricos analizando manuales, fallos y funciones de pantalla."
 });
 
-// --- 3. ESTADO GLOBAL ---
 let user = null;
 let historialCargas = [];
 let fotoBase64 = null;
@@ -54,7 +50,7 @@ let estadoAuto = {
     combustibles: { "Super 95": 88.03, "Premium 97": 90.09, "Gasoil 10S": 66.27, "Gasoil 50-S": 57.72 }
 };
 
-// --- 4. GESTIÓN DE DATOS ---
+// --- 4. GESTIÓN DE SESIÓN Y DATOS ---
 onAuthStateChanged(auth, (u) => {
     const loginScreen = document.getElementById('login-screen');
     const mainApp = document.getElementById('main-app');
@@ -101,6 +97,9 @@ window.actualizarPreview = () => {
     const tarifa = document.getElementById('tipo-tarifa')?.value;
     const preview = document.getElementById('preview-costo');
 
+    if (inicio < 0) inicio = 0; if (inicio > 100) inicio = 100;
+    if (fin < 0) fin = 0; if (fin > 100) fin = 100;
+
     if (!isNaN(inicio) && !isNaN(fin) && tarifa && preview) {
         if (fin <= inicio) {
             preview.innerHTML = `<span class="text-orange-500 font-bold uppercase text-[10px]">El % final debe ser mayor</span>`;
@@ -120,8 +119,8 @@ window.registrarCarga = async (e) => {
     const tarifa = document.getElementById('tipo-tarifa').value;
     const esCien = document.getElementById('es-cien').checked;
 
+    // VALIDACIONES DE SEGURIDAD
     if (fin <= inicio) return alert("Error: El porcentaje final debe ser mayor al inicial.");
-    
     const kmAnterior = historialCargas[0]?.km || 0;
     if (historialCargas.length > 0) {
         if (km <= kmAnterior) return alert("Error: El kilometraje debe ser mayor al anterior (" + kmAnterior + " km).");
@@ -137,7 +136,7 @@ window.registrarCarga = async (e) => {
             fecha: Date.now(), km, batIn: inicio, batFin: fin, kwhTotales: kwh, costo, tarifaLabel: tarifa, esCien
         });
         e.target.reset();
-        document.getElementById('preview-costo').innerText = "REGISTRADO ✅";
+        document.getElementById('preview-costo').innerText = "ESPERANDO DATOS";
     } catch (err) { alert("Error al conectar con la base de datos."); }
 };
 
@@ -165,10 +164,10 @@ window.preguntarIA = async () => {
         if(sug) sug.innerHTML = `<div class="bg-blue-600/10 p-5 rounded-3xl border border-blue-500/20 text-zinc-200 text-sm leading-relaxed">${text.replace(/\n/g, '<br>')}</div>`;
         window.quitarFoto();
         document.getElementById('input-busqueda').value = "";
-    } catch (err) { if(sug) sug.innerHTML = "Error de conexión con IA. Revisa la API Key."; }
+    } catch (err) { if(sug) sug.innerHTML = "Error de conexión con IA. Revisa la configuración."; }
 };
 
-// --- 7. RENDERIZADO ---
+// --- 7. RENDERIZADO DE INTERFAZ ---
 function renderizarApp() {
     try {
         const nameEl = document.getElementById('user-display-name');
