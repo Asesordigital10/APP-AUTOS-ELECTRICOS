@@ -44,7 +44,7 @@ let fotoBase64 = null;
 let estadoAuto = { 
     tipoUso: "particular", combustibleComparativo: "Super 95",
     nombreUsuario: "", marcaModelo: "", matricula: "",
-    capacityBateria: 54.3, rendimientoAnterior: 12,
+    capacidadBateria: 54.3, rendimientoAnterior: 12,
     nombreTaller: "", direccionTaller: "", telefonoTaller: "",
     precios: { hogarValle: 2.32, uteLenta: 7.54, uteRapida: 10.80, wallboxEspecial: 12.00 },
     combustibles: { "Super 95": 88.03, "Premium 97": 90.09, "Gasoil 10S": 66.27, "Gasoil 50-S": 57.72 }
@@ -140,7 +140,7 @@ window.registrarCarga = async (e) => {
     } catch (err) { alert("Error al conectar con la base de datos."); }
 };
 
-// --- 6. ASISTENTE IA ---
+// --- 6. ASISTENTE IA (Estructura Corregida para evitar Error 400) ---
 window.preguntarIA = async () => {
     const prompt = document.getElementById('input-busqueda')?.value;
     const sug = document.getElementById('sugerencias-manual');
@@ -155,17 +155,21 @@ window.preguntarIA = async () => {
         } catch (e) {}
 
         const instrucciones = `Usa esta info técnica: ${manualContexto}. Pregunta: ${prompt}`;
-        let partes = [instrucciones];
-        if (fotoBase64) partes.push({ inlineData: { data: fotoBase64, mimeType: "image/jpeg" } });
+        
+        // Formato estructurado estricto para evitar incompatibilidades de tipos en el backend de Google
+        let partes = [{ text: instrucciones }];
+        if (fotoBase64) {
+            partes.push({ inlineData: { data: fotoBase64, mimeType: "image/jpeg" } });
+        }
 
-        const result = await model.generateContent(partes);
+        // Llamada con la envoltura oficial del SDK de Gemini
+        const result = await model.generateContent({ contents: [{ parts: partes }] });
         const text = result.response.text();
 
         if(sug) sug.innerHTML = `<div class="bg-blue-600/10 p-5 rounded-3xl border border-blue-500/20 text-zinc-200 text-sm leading-relaxed">${text.replace(/\n/g, '<br>')}</div>`;
         window.quitarFoto();
-        document.getElementById('input-busqueda').value = "";
+        if(document.getElementById('input-busqueda')) document.getElementById('input-busqueda').value = "";
     } catch (err) { 
-        // Esta línea nos mostrará el error exacto en la consola (F12) para saber qué pasa
         console.error("Error real de Gemini:", err); 
         if(sug) sug.innerHTML = "Error de conexión con IA. Revisa la configuración."; 
     }
