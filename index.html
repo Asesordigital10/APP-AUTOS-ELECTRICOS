@@ -4,12 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ASYS AUTO - Bitácora Inteligente</title>
-    <!-- Tailwind CSS para el diseño -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Iconos Lucide -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        /* Estilos personalizados para esconder flechas de los inputs numéricos */
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -17,9 +14,6 @@
 </head>
 <body class="bg-black text-white min-h-screen font-sans selection:bg-blue-500/30 pb-20">
 
-    <!-- ============================================== -->
-    <!-- PANTALLA DE LOGIN -->
-    <!-- ============================================== -->
     <div id="login-screen" class="fixed inset-0 bg-zinc-950 z-50 flex flex-col items-center justify-center p-6">
         <div class="bg-zinc-900 border border-zinc-800 p-8 rounded-[2.5rem] w-full max-w-sm text-center shadow-2xl">
             <div class="bg-blue-500/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 border border-blue-500/20">
@@ -34,12 +28,8 @@
         </div>
     </div>
 
-    <!-- ============================================== -->
-    <!-- APLICACIÓN PRINCIPAL -->
-    <!-- ============================================== -->
     <div id="main-app" class="hidden max-w-md mx-auto relative min-h-screen flex flex-col">
         
-        <!-- HEADER -->
         <header class="p-6 flex justify-between items-center sticky top-0 bg-black/80 backdrop-blur-md z-40 border-b border-zinc-900">
             <div>
                 <h1 class="font-black text-xl tracking-tight flex items-center gap-2">
@@ -57,37 +47,26 @@
             </div>
         </header>
 
-        <!-- CONTENIDO PRINCIPAL -->
         <main class="p-6 flex-1 flex flex-col gap-6">
             
-            <!-- PANEL DE ESTADO SUPERIOR (Batería y Mantenimiento) -->
             <div class="grid grid-cols-2 gap-4">
                 <div id="card-bateria" class="col-span-1">
-                    <!-- Se llena por JS -->
                     <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-[2.5rem] text-center animate-pulse h-32"></div>
                 </div>
                 <div id="card-mantenimiento" class="col-span-1">
-                    <!-- Se llena por JS -->
                     <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-[2.5rem] text-center animate-pulse h-32"></div>
                 </div>
             </div>
 
-            <!-- PANEL DE AHORRO -->
-            <div class="bg-gradient-to-br from-blue-900/40 to-blue-600/10 border border-blue-500/20 p-6 rounded-[2.5rem] relative overflow-hidden">
-                <div class="absolute -right-4 -top-4 opacity-10">
-                    <i data-lucide="piggy-bank" class="w-32 h-32"></i>
-                </div>
-                <p class="text-[10px] text-blue-400 uppercase font-black tracking-widest mb-1 relative z-10">Ahorro vs Combustible</p>
-                <h2 id="ahorro-valor" class="text-4xl font-black text-white relative z-10 mb-4">$ 0</h2>
-                <div class="relative z-10">
+            <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-[2.5rem]">
+                <p class="text-[10px] text-zinc-500 uppercase font-black tracking-widest mb-1">Ahorro vs Combustible</p>
+                <h2 id="ahorro-valor" class="text-4xl font-black text-white mb-4">$ 0</h2>
+                <div>
                     <p class="text-[9px] text-zinc-400 uppercase mb-2">Comparar contra:</p>
-                    <div id="fuel-selectors" class="flex gap-2 hide-scrollbar overflow-x-auto pb-2">
-                        <!-- Botones de nafta llenados por JS -->
-                    </div>
+                    <div id="fuel-selectors" class="flex gap-2 hide-scrollbar overflow-x-auto pb-2"></div>
                 </div>
             </div>
 
-            <!-- REGISTRO DE NUEVA CARGA -->
             <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-[2.5rem]">
                 <h3 class="text-xs text-zinc-400 uppercase font-black mb-4 flex items-center gap-2">
                     <i data-lucide="battery-charging" class="w-4 h-4"></i> Registrar Carga
@@ -129,14 +108,13 @@
                         <div id="preview-costo" class="text-sm text-zinc-300">
                             <span class="text-[10px] uppercase text-zinc-500 font-bold tracking-widest">Esperando datos...</span>
                         </div>
-                        <button type="submit" class="bg-white text-black px-6 py-3 rounded-full font-black text-sm shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:scale-105 transition-transform">
+                        <button type="submit" class="bg-white text-black px-6 py-3 rounded-full font-black text-sm hover:bg-zinc-200 transition-colors">
                             GUARDAR
                         </button>
                     </div>
                 </form>
             </div>
 
-            <!-- HISTORIAL RECIENTE -->
             <div>
                 <div class="flex justify-between items-end mb-4 px-2">
                     <h3 class="text-xs text-zinc-400 uppercase font-black">Últimas Cargas</h3>
@@ -149,10 +127,8 @@
                 </div>
             </div>
 
-            <!-- SEPARADOR -->
             <div class="h-px bg-zinc-800 my-4 w-full"></div>
 
-            <!-- ASISTENTE IA -->
             <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-[2.5rem]">
                 <h3 class="text-xs text-zinc-400 uppercase font-black mb-4 flex items-center gap-2">
                     <i data-lucide="bot" class="w-4 h-4 text-purple-400"></i> Asistente Técnico IA
@@ -174,7 +150,7 @@
                     <button onclick="document.getElementById('input-foto').click()" class="p-3 text-zinc-400 hover:text-white bg-zinc-900 rounded-xl">
                         <i data-lucide="camera" class="w-5 h-5"></i>
                     </button>
-                    <input type="text" id="input-busqueda" placeholder="Ej: ¿Qué significa la luz amarilla con un auto?" class="flex-1 bg-transparent text-sm outline-none px-2" onkeypress="if(event.key === 'Enter') window.preguntarIA()">
+                    <input type="text" id="input-busqueda" placeholder="Ej: ¿Qué significa la luz amarilla?" class="flex-1 bg-transparent text-sm outline-none px-2" onkeypress="if(event.key === 'Enter') window.preguntarIA()">
                     <button onclick="window.preguntarIA()" class="bg-purple-600 text-white px-4 rounded-xl shadow-lg hover:bg-purple-500 transition-colors">
                         <i data-lucide="send" class="w-4 h-4"></i>
                     </button>
@@ -184,9 +160,6 @@
         </main>
     </div>
 
-    <!-- ============================================== -->
-    <!-- MODAL DE CONFIGURACIÓN -->
-    <!-- ============================================== -->
     <div id="modal-config" class="hidden fixed inset-0 bg-black/95 z-50 overflow-y-auto pb-20">
         <div class="max-w-md mx-auto p-6 flex flex-col gap-6">
             
@@ -199,7 +172,6 @@
                 </button>
             </div>
 
-            <!-- DATOS DEL VEHÍCULO -->
             <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-3xl flex flex-col gap-4">
                 <h3 class="text-xs text-blue-400 uppercase font-black">Vehículo & Usuario</h3>
                 
@@ -208,7 +180,6 @@
                     <input type="text" id="conf-nombre" class="w-full bg-black text-white p-3 rounded-xl border border-zinc-800 outline-none focus:border-blue-500">
                 </div>
 
-                <!-- EL CAMBIO MAESTRO: Desplegable de modelos -->
                 <div>
                     <label class="text-[10px] uppercase font-bold text-zinc-500">Modelo de Auto Exacto</label>
                     <div class="relative">
@@ -221,7 +192,6 @@
                         </select>
                         <i data-lucide="chevron-down" class="absolute right-3 top-3 w-5 h-5 text-zinc-500 pointer-events-none"></i>
                     </div>
-                    <p class="text-[9px] text-zinc-500 mt-1 pl-1">Asegura respuestas precisas de la IA.</p>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
@@ -250,7 +220,6 @@
                 </div>
             </div>
 
-            <!-- PRECIOS ELECTRICIDAD -->
             <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-3xl flex flex-col gap-4">
                 <h3 class="text-xs text-green-400 uppercase font-black">Tarifas Eléctricas ($/kWh)</h3>
                 <div class="grid grid-cols-2 gap-3">
@@ -273,12 +242,11 @@
                 </div>
             </div>
 
-            <!-- PRECIOS COMBUSTIBLES -->
             <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-3xl flex flex-col gap-4">
                 <h3 class="text-xs text-orange-400 uppercase font-black">Precios Combustibles ($/L)</h3>
                 
                 <div>
-                    <label class="text-[10px] uppercase font-bold text-zinc-500">Combustible de referencia principal</label>
+                    <label class="text-[10px] uppercase font-bold text-zinc-500">Combustible principal</label>
                     <div class="relative mb-3">
                         <select id="conf-tipo-nafta" class="w-full bg-black text-white p-3 rounded-xl border border-zinc-800 outline-none focus:border-orange-500 appearance-none">
                             <option value="Super 95">Nafta Super 95</option>
@@ -310,11 +278,10 @@
                 </div>
             </div>
 
-            <!-- TALLER / SERVICE -->
             <div class="bg-zinc-900 border border-zinc-800 p-5 rounded-3xl flex flex-col gap-4">
                 <h3 class="text-xs text-red-400 uppercase font-black">Service Oficial</h3>
                 <div>
-                    <label class="text-[10px] uppercase font-bold text-zinc-500">Nombre del Taller</label>
+                    <label class="text-[10px] uppercase font-bold text-zinc-500">Taller</label>
                     <input type="text" id="conf-taller" class="w-full bg-black text-white p-3 rounded-xl border border-zinc-800 outline-none focus:border-red-500">
                 </div>
                 <div>
@@ -322,20 +289,19 @@
                     <input type="text" id="conf-taller-dir" class="w-full bg-black text-white p-3 rounded-xl border border-zinc-800 outline-none focus:border-red-500">
                 </div>
                 <div>
-                    <label class="text-[10px] uppercase font-bold text-zinc-500">WhatsApp (con código país, ej: 598...)</label>
+                    <label class="text-[10px] uppercase font-bold text-zinc-500">WhatsApp (ej: 598...)</label>
                     <input type="number" id="conf-taller-tel" class="w-full bg-black text-white p-3 rounded-xl border border-zinc-800 outline-none focus:border-red-500">
                 </div>
             </div>
 
-            <button onclick="window.guardarConfig(event)" class="w-full bg-blue-600 text-white font-black p-4 rounded-2xl sticky bottom-4 shadow-[0_0_20px_rgba(37,99,235,0.4)] hover:bg-blue-500 transition-colors">
+            <button onclick="window.guardarConfig(event)" class="w-full bg-zinc-200 text-black font-black p-4 rounded-2xl sticky bottom-4 hover:bg-white transition-colors">
                 Guardar Configuración
             </button>
 
         </div>
     </div>
 
-    <!-- Carga del archivo principal de JavaScript (Como Módulo) -->
     <script type="module" src="app.js"></script>
 
 </body>
-</html>
+                        </html>
