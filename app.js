@@ -2,7 +2,6 @@
 import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app-check.js";
-// VOLVEMOS AL POPUP: El método más estable para GitHub Pages
 import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, deleteDoc, orderBy, getDocs, where } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
@@ -247,7 +246,6 @@ function renderizarApp() {
 }
 
 // --- 8. FUNCIONES GLOBALES ---
-// DEJAMOS EL POPUP QUE ES SEGURO CONTRA ERRORES DE DOMINIO:
 window.loginGoogle = async () => { 
     try { 
         await signInWithPopup(auth, provider); 
